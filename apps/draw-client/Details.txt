@@ -1,0 +1,25 @@
+What does the files do:-
+
+/draw/index.ts:
+It is acting like a drawing engine, define shapes, 
+initDraw function= 
+    a. gets the 2d context from canvas, 
+    b. loads existing shapes using getOldShapes()[hits the backend and gets me the shapes], Dra
+    c. draws the exitsing shapes using clearCanvas()
+    d. has events which lets the user draw and at the same time broadcasts it using websocket
+
+
+/canvas/[roomId].page.tsx
+It is the page we can see the the browser, It takes out the roomId from the params and passes to the Canvas component
+
+
+/components/Canvas.tsx
+It renders our Canvas into the page and calls the initDraw function, basically this file gives us the Canvas and the powers to draw by importing them
+
+
+/components/RoomCanvas.tsx
+Connects the Web Socket server by or custom hook and give the ws powers to the Canvas page
+
+
+/hooks/useSocket.ts
+Have the logic of connecting to the Web Socket Server and joins the roomId provided by the page.tsx

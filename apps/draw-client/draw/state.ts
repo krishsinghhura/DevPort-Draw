@@ -1,0 +1,47 @@
+// draw/state.ts
+import type { Shape, Tool, Point } from "./types";
+
+export const state = {
+  // canvas
+  canvas: null as HTMLCanvasElement | null,
+  ctx: null as CanvasRenderingContext2D | null,
+
+  // tool + pointer
+  activeTool: null as Tool | null,
+  clicked: false,
+  startX: 0,
+  startY: 0,
+  currentPath: [] as Point[],
+
+  // selection
+  selectedShape: null as Shape | null,
+  dragOffsetX: 0,
+  dragOffsetY: 0,
+
+  // shapes + history + clipboard
+  shapes: [] as Shape[],
+  undoStack: [] as Shape[][],
+  redoStack: [] as Shape[][],
+  clipboard: null as Shape[] | null,
+
+  // environment
+  getTool: null as (() => Tool) | null,
+  roomId: null as string | null,
+  socket: null as WebSocket | null,
+  isServerMode: false,
+};
+
+export function setEnv(opts: {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  getTool: () => Tool;
+  roomId?: string | null;
+  socket?: WebSocket | null;
+}) {
+  state.canvas = opts.canvas;
+  state.ctx = opts.ctx;
+  state.getTool = opts.getTool;
+  state.roomId = opts.roomId ?? null;
+  state.socket = opts.socket ?? null;
+  state.isServerMode = !!(opts.socket && opts.roomId);
+}

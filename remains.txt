@@ -1,0 +1,23 @@
+add a guest canvas - done
+
+add more shapes- done
+
+add a eraser - done
+
+add test field - done
+
+Select something and move - done
+
+add undo and redo - done
+
+modularizing - done
+
+implement redis and queue
+
+implement redis for users in ws-server as well
+
+add signin and signup in frontend 
+
+Add a dashboard
+
+add Ai implementattion
