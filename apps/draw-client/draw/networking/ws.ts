@@ -13,6 +13,40 @@ export function setupWS() {
   state.socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
 
+    // 🔹 Replay history when joining
+    if (message.type === "init-history") {
+      const shapes: Shape[] = [];
+
+      message.events.forEach((e: any) => {
+        try {
+          const parsed = JSON.parse(e.message);
+
+          if (parsed.type === "draw") {
+            shapes.push(parsed.shape);
+          }
+
+          if (parsed.type === "erase") {
+            for (const id of parsed.ids) {
+              const idx = shapes.findIndex((s) => s.id === id);
+              if (idx !== -1) shapes.splice(idx, 1);
+            }
+          }
+
+          if (parsed.type === "move") {
+            const moved = parsed.shape;
+            const idx = shapes.findIndex((s) => s.id === moved.id);
+            if (idx !== -1) shapes[idx] = moved;
+          }
+        } catch (err) {
+          console.error("Failed to parse history event:", e, err);
+        }
+      });
+
+      state.shapes = shapes;
+      clearCanvas(state.shapes, state.canvas!, state.ctx!);
+    }
+
+    // 🔹 Live updates
     if (message.type === "init-shapes") {
       state.shapes = message.shapes as Shape[];
       clearCanvas(state.shapes, state.canvas!, state.ctx!);

@@ -12,9 +12,11 @@ add undo and redo - done
 
 modularizing - done
 
-implement redis and queue
+implement redis - done
 
-implement redis for users in ws-server as well
+implement redis for users in ws-server as well - done
+
+implement queue for flushing
 
 add signin and signup in frontend 
 

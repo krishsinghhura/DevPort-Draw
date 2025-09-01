@@ -5,22 +5,26 @@ import { middleware } from "./middleware";
 import { SignupSchema, SigninSchema, CreateRoom } from "@repo/common/zodTypes";
 import { prismaClient } from "@repo/db/client";
 import bcrypt from "bcrypt-ts";
-import {getRoomId} from "./utils/getRoomId"
+import { getRoomId } from "./utils/getRoomId";
+import { redisClient, connectRedis } from "@repo/servers-common/redisClient";
 
 const app = express();
 app.use(express.json());
 
 prismaClient.$connect();
+connectRedis();
 
+/**
+ * Signup
+ */
 app.post("/signup", async (req, res) => {
   if (!req.body) {
-    res.json("No valid inputs");
+    return res.status(400).json("No valid inputs");
   }
 
   const parseddata = SignupSchema.safeParse(req.body);
   if (!parseddata.success) {
-    res.json({ message: "Incorrect Inputs"});
-    return;
+    return res.status(400).json({ message: "Incorrect Inputs" });
   }
 
   const hashedPassword = bcrypt.hashSync(parseddata.data.password, 10);
@@ -33,87 +37,121 @@ app.post("/signup", async (req, res) => {
       },
     });
 
-    res.json({
-      
-      signupResponse,
-    });
+    res.json({ signupResponse });
   } catch (error: any) {
-    res.status(400).json(error.message);
-    return;
+    res.status(400).json({ error: error.message });
   }
 });
 
-app.post("/signin", async(req, res) => {
+/**
+ * Signin
+ */
+app.post("/signin", async (req, res) => {
   if (!req.body) {
-    res.json("No Valid inputs");
+    return res.status(400).json("No Valid inputs");
   }
+
   const parseddata = SigninSchema.safeParse(req.body);
   if (!parseddata.success) {
-    res.json({ message: "Incorrect Inputs" });
-    return;
+    return res.status(400).json({ message: "Incorrect Inputs" });
   }
 
   try {
     const user = await prismaClient.user.findUnique({
-      where: {
-        email:parseddata.data.email,
-      },
+      where: { email: parseddata.data.email },
     });
     if (!user) {
-      res.json({ message: `No user with ${parseddata.data.email}` });
-      return;
+      return res.status(404).json({ message: `No user with ${parseddata.data.email}` });
     }
-    
-    const checkPassword = await bcrypt.compare(parseddata.data.password, user?.password);
-    if (!checkPassword) {
-      res.json({ message: "Wrong Password" });
-      return;
-    }
-  
-    const token = jwt.sign({ userId:user?.id }, JWT_SECRET);
 
+    const checkPassword = await bcrypt.compare(parseddata.data.password, user.password);
+    if (!checkPassword) {
+      return res.status(401).json({ message: "Wrong Password" });
+    }
+
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET);
     res.json({ token });
   } catch (error: any) {
-    res.json(error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.post("/create-room", middleware,async (req, res) => {
+/**
+ * Create Room
+ */
+app.post("/create-room", middleware, async (req, res) => {
   const parseddata = CreateRoom.safeParse(req.body);
   if (!parseddata.success) {
-    res.json({ message: "Incorrect Inputs" });
-    return;
+    return res.status(400).json({ message: "Incorrect Inputs" });
   }
 
-  const userId=req.userId;
+  const userId = req.userId;
 
- const room= await prismaClient.room.create({
-    data:{
-      slug:parseddata.data.slug,
-      adminId:Number(userId)
-    }
-  })
-  res.json({
-    roomId:room.id
-  });
+  try {
+    const room = await prismaClient.room.create({
+      data: {
+        slug: parseddata.data.slug,
+        adminId: Number(userId),
+      },
+    });
+
+    res.json({ roomId: room.id });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.get("/room/:slug",async(req,res)=>{
-  const slug=req.params.slug;
-  const id=await getRoomId(slug);
-  if(id===null){
-    return res.status(404).json({ error: "Room not found" });
+/**
+ * Fetch room history
+ * → Redis cache first, fallback to DB
+ */
+app.get("/room/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  const redisKey = `room:${slug}:events`;
+
+  try {
+    // 1️⃣ Try Redis first
+    const cached = await redisClient.lRange(redisKey, 0, -1);
+    if (cached.length > 0) {
+      const events = cached.map((m) => JSON.parse(m));
+      console.log(`[Cache] Returned events for room:${slug}`);
+      return res.json(events);
+    }
+
+    // 2️⃣ Fallback to DB
+    const roomId = await getRoomId(slug);
+    if (roomId === null) {
+      return res.status(404).json({ error: "Room not found" });
+    }
+
+    const rows = await prismaClient.chatHistory.findMany({
+      where: { roomId },
+      orderBy: { createdAt: "asc" },
+      take: 50,
+    });
+
+    const events = rows.map((r) => {
+      try {
+        return JSON.parse(r.message); // if structured JSON
+      } catch {
+        return { type: "chat", message: r.message, userId: r.userId, roomId: slug };
+      }
+    });
+
+    // 3️⃣ Cache in Redis for next time
+    if (events.length > 0) {
+      await redisClient.rPush(redisKey, events.map((e) => JSON.stringify(e)));
+      await redisClient.expire(redisKey, 24 * 60 * 60); // 24h TTL
+    }
+
+    console.log(`[DB] Returned events for room:${slug}`);
+    return res.json(events);
+  } catch (error: any) {
+    console.error("Error fetching room history:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
-  const messages=await prismaClient.chatHistory.findMany({
-    where:{
-      roomId:id
-    },orderBy:{
-      id:"desc"
-    },
-    take:50
-  })
+});
 
-  res.json(messages);
-})
-
-app.listen(3001);
+app.listen(3001, () => {
+  console.log("✅ HTTP server running on :3001");
+});

@@ -7,11 +7,9 @@ export function clearCanvas(
   ctx: CanvasRenderingContext2D
 ) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "rgba(0,0,0)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   existingShapes.forEach((shape) => {
-    ctx.strokeStyle = "white";
+    ctx.strokeStyle = "white"; // stroke in black on transparent bg
 
     switch (shape.type) {
       case "rect":
@@ -43,8 +41,9 @@ export function clearCanvas(
           ctx.stroke();
         }
         break;
+
       case "text":
-        ctx.fillStyle = "white";
+        ctx.fillStyle = "black";
         ctx.font = "20px Arial";
         ctx.fillText(shape.text, shape.x, shape.y);
         break;
