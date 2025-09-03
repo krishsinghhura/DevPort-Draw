@@ -1,15 +1,55 @@
+// draw/clearCanvas.ts
 import { Shape } from "./types";
 import { drawArrow } from "./utils";
+import { state } from "./state";
+
+// Draws an infinite-looking grid
+function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number) {
+  const step = 50; // grid spacing in world units
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 0.5;
+
+  // Because we are in world coordinates, we can draw a repeating pattern
+  const startX = -width;
+  const endX = width * 2;
+  const startY = -height;
+  const endY = height * 2;
+
+  for (let x = startX; x <= endX; x += step) {
+    ctx.beginPath();
+    ctx.moveTo(x, startY);
+    ctx.lineTo(x, endY);
+    ctx.stroke();
+  }
+
+  for (let y = startY; y <= endY; y += step) {
+    ctx.beginPath();
+    ctx.moveTo(startX, y);
+    ctx.lineTo(endX, y);
+    ctx.stroke();
+  }
+}
 
 export function clearCanvas(
   existingShapes: Shape[],
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D
 ) {
+  // Clear the whole screen
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Apply camera transform (pan + zoom)
+  ctx.save();
+  ctx.translate(state.camera.offsetX, state.camera.offsetY);
+  ctx.scale(state.camera.scale, state.camera.scale);
+
+  // Draw background grid (optional, looks infinite when panning/zooming)
+  drawGrid(ctx, canvas.width, canvas.height);
+
+  // Draw all shapes in world coordinates
   existingShapes.forEach((shape) => {
-    ctx.strokeStyle = "white"; // stroke in black on transparent bg
+    ctx.strokeStyle = "white";
+    ctx.fillStyle = "white";
 
     switch (shape.type) {
       case "rect":
@@ -49,4 +89,7 @@ export function clearCanvas(
         break;
     }
   });
+
+  // Restore transform so UI overlays (like selection boxes) can be drawn later in screen coords
+  ctx.restore();
 }

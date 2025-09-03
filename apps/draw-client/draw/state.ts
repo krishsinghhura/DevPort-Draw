@@ -29,6 +29,18 @@ export const state = {
   roomId: null as string | null,
   socket: null as WebSocket | null,
   isServerMode: false,
+
+  // camera (for infinite canvas)
+  camera: {
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
+    isPanning: false,
+    panStartX: 0,
+    panStartY: 0,
+    lastOffsetX: 0,
+    lastOffsetY: 0,
+  },
 };
 
 export function setEnv(opts: {
@@ -44,4 +56,12 @@ export function setEnv(opts: {
   state.roomId = opts.roomId ?? null;
   state.socket = opts.socket ?? null;
   state.isServerMode = !!(opts.socket && opts.roomId);
+}
+
+// helper: screen -> world coords
+export function screenToWorld(x: number, y: number) {
+  return {
+    x: (x - state.camera.offsetX) / state.camera.scale,
+    y: (y - state.camera.offsetY) / state.camera.scale,
+  };
 }

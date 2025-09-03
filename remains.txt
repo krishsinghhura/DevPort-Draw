@@ -1,4 +1,4 @@
-Add panning and zooming
+Add panning and zooming - done
 
 resizing
 

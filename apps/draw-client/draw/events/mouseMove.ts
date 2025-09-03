@@ -1,5 +1,5 @@
 // draw/events/mouseMove.ts
-import { state } from "../state";
+import { state, screenToWorld } from "../state";
 import { dragSelectedTo } from "../selection";
 import { clearCanvas } from "../clearCanvas";
 import { handleEraserMove } from "../eraser";
@@ -9,8 +9,18 @@ export function onMouseMove(e: MouseEvent) {
   if (!state.canvas || !state.ctx) return;
 
   const rect = state.canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const rawX = e.clientX - rect.left;
+  const rawY = e.clientY - rect.top;
+
+  // Pan camera
+  if (state.camera.isPanning) {
+    state.camera.offsetX = state.camera.lastOffsetX + (rawX - state.camera.panStartX);
+    state.camera.offsetY = state.camera.lastOffsetY + (rawY - state.camera.panStartY);
+    clearCanvas(state.shapes, state.canvas, state.ctx);
+    return;
+  }
+
+  const { x, y } = screenToWorld(rawX, rawY);
 
   if (state.activeTool === "select" && state.clicked && state.selectedShape) {
     dragSelectedTo(x, y);

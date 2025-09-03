@@ -1,5 +1,5 @@
 // draw/events/mouseUp.ts
-import { state } from "../state";
+import { state, screenToWorld } from "../state";
 import { finalizeTool } from "../drawing";
 import { pushState } from "../history";
 import { saveGuest } from "../storage";
@@ -8,11 +8,17 @@ import { clearCanvas } from "../clearCanvas";
 import { uid } from "../utils";
 
 export function onMouseUp(e: MouseEvent) {
+  if (state.camera.isPanning) {
+    state.camera.isPanning = false;
+    return;
+  }
+
   if (!state.clicked || !state.activeTool || !state.canvas || !state.ctx) return;
 
   const rect = state.canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const rawX = e.clientX - rect.left;
+  const rawY = e.clientY - rect.top;
+  const { x, y } = screenToWorld(rawX, rawY);
 
   // move
   if (state.activeTool === "select" && state.selectedShape) {
