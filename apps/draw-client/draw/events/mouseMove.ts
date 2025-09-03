@@ -22,6 +22,39 @@ export function onMouseMove(e: MouseEvent) {
 
   const { x, y } = screenToWorld(rawX, rawY);
 
+  // Resize mode
+  if (state.resizing && state.selectedShape) {
+    const s = state.selectedShape;
+    switch (s.type) {
+      case "rect":
+        if (state.activeHandle === "bottom-right") {
+          s.width = x - s.x;
+          s.height = y - s.y;
+        } else if (state.activeHandle === "top-left") {
+          s.width += s.x - x;
+          s.height += s.y - y;
+          s.x = x;
+          s.y = y;
+        }
+        break;
+      case "circle":
+        s.radius = Math.abs(x - s.centerX);
+        break;
+      case "line":
+      case "arrow":
+        if (state.activeHandle === "start") {
+          s.x1 = x;
+          s.y1 = y;
+        } else if (state.activeHandle === "end") {
+          s.x2 = x;
+          s.y2 = y;
+        }
+        break;
+    }
+    clearCanvas(state.shapes, state.canvas, state.ctx);
+    return;
+  }
+
   if (state.activeTool === "select" && state.clicked && state.selectedShape) {
     dragSelectedTo(x, y);
     return;

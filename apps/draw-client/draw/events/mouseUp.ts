@@ -1,15 +1,28 @@
-// draw/events/mouseUp.ts
 import { state, screenToWorld } from "../state";
 import { finalizeTool } from "../drawing";
 import { pushState } from "../history";
 import { saveGuest } from "../storage";
-import { wsDraw, wsMove } from "../networking/ws";
+import { wsDraw, wsMove, wsUpdate } from "../networking/ws";
 import { clearCanvas } from "../clearCanvas";
 import { uid } from "../utils";
 
 export function onMouseUp(e: MouseEvent) {
   if (state.camera.isPanning) {
     state.camera.isPanning = false;
+    return;
+  }
+
+  // 🔹 Resizing finished → broadcast update
+  if (state.resizing) {
+    state.resizing = false;
+    state.activeHandle = null;
+    pushState();
+    clearCanvas(state.shapes, state.canvas!, state.ctx!);
+
+    if (state.selectedShape) {
+      if (!state.isServerMode) saveGuest(state.shapes);
+      else wsUpdate(state.selectedShape);
+    }
     return;
   }
 
@@ -20,7 +33,7 @@ export function onMouseUp(e: MouseEvent) {
   const rawY = e.clientY - rect.top;
   const { x, y } = screenToWorld(rawX, rawY);
 
-  // move
+  // 🔹 Move shape
   if (state.activeTool === "select" && state.selectedShape) {
     if (!state.isServerMode) saveGuest(state.shapes);
     else wsMove(state.selectedShape);
@@ -28,9 +41,15 @@ export function onMouseUp(e: MouseEvent) {
     return;
   }
 
-  // draw
+  // 🔹 Draw new shape
   const shape = finalizeTool(
-    state.activeTool, state.startX, state.startY, x, y, state.currentPath, uid
+    state.activeTool,
+    state.startX,
+    state.startY,
+    x,
+    y,
+    state.currentPath,
+    uid
   );
 
   state.clicked = false;

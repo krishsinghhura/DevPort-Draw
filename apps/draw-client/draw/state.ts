@@ -18,6 +18,10 @@ export const state = {
   dragOffsetX: 0,
   dragOffsetY: 0,
 
+  // resizing
+  resizing: false,
+  activeHandle: null as string | null,
+
   // shapes + history + clipboard
   shapes: [] as Shape[],
   undoStack: [] as Shape[][],

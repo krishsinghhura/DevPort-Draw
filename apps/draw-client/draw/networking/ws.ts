@@ -1,88 +1,122 @@
-// draw/networking/ws.ts
+// draw/networking/setupWS.ts
 import type { Shape } from "../types";
 import { state } from "../state";
 import { clearCanvas } from "../clearCanvas";
+
+// 🔹 Merge updates instead of replacing to preserve existing properties
+function upsertShape(shapes: Shape[], updated: Shape) {
+  const idx = shapes.findIndex((s) => s.id === updated.id);
+  if (idx !== -1) {
+    shapes[idx] = { ...shapes[idx], ...updated };
+  } else {
+    shapes.push(updated);
+  }
+}
 
 export function setupWS() {
   if (!state.socket || !state.roomId || !state.ctx || !state.canvas) return;
 
   state.socket.onopen = () => {
-    state.socket!.send(JSON.stringify({ type: "join-room", roomId: state.roomId }));
+    state.socket!.send(
+      JSON.stringify({ type: "join-room", slug: state.roomId })
+    );
   };
 
   state.socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
+    let message;
+    try {
+      message = JSON.parse(event.data);
+    } catch (err) {
+      console.error("Invalid WS message:", event.data, err);
+      return;
+    }
 
-    // 🔹 Replay history when joining
-    if (message.type === "init-history") {
-      const shapes: Shape[] = [];
+    const handleShapeUpdate = (shape: Shape) => {
+      upsertShape(state.shapes, shape);
+      clearCanvas(state.shapes, state.canvas!, state.ctx!);
+    };
 
-      message.events.forEach((e: any) => {
-        try {
-          const parsed = JSON.parse(e.message);
+    switch (message.type) {
+      case "init-history":
+        state.shapes = [];
+        message.events.forEach((e: any) => {
+          let parsed: any;
+          try {
+            parsed =
+              typeof e === "string"
+                ? JSON.parse(e)
+                : e.message
+                ? JSON.parse(e.message)
+                : e;
 
-          if (parsed.type === "draw") {
-            shapes.push(parsed.shape);
-          }
-
-          if (parsed.type === "erase") {
-            for (const id of parsed.ids) {
-              const idx = shapes.findIndex((s) => s.id === id);
-              if (idx !== -1) shapes.splice(idx, 1);
+            if (["draw", "move", "update", "resize"].includes(parsed.type)) {
+              handleShapeUpdate(parsed.shape);
             }
+
+            if (parsed.type === "erase") {
+              state.shapes = state.shapes.filter(
+                (s) => !parsed.ids.includes(s.id)
+              );
+              clearCanvas(state.shapes, state.canvas!, state.ctx!);
+            }
+          } catch (err) {
+            console.error("Failed to parse history event:", e, err);
           }
+        });
+        break;
 
-          if (parsed.type === "move") {
-            const moved = parsed.shape;
-            const idx = shapes.findIndex((s) => s.id === moved.id);
-            if (idx !== -1) shapes[idx] = moved;
-          }
-        } catch (err) {
-          console.error("Failed to parse history event:", e, err);
-        }
-      });
+      case "init-shapes":
+        state.shapes = message.shapes as Shape[];
+        clearCanvas(state.shapes, state.canvas!, state.ctx!);
+        break;
 
-      state.shapes = shapes;
-      clearCanvas(state.shapes, state.canvas!, state.ctx!);
-    }
+      case "draw":
+      case "move":
+      case "update":
+      case "resize":
+        handleShapeUpdate(message.shape as Shape);
+        break;
 
-    // 🔹 Live updates
-    if (message.type === "init-shapes") {
-      state.shapes = message.shapes as Shape[];
-      clearCanvas(state.shapes, state.canvas!, state.ctx!);
-    }
-
-    if (message.type === "draw") {
-      state.shapes.push(message.shape as Shape);
-      clearCanvas(state.shapes, state.canvas!, state.ctx!);
-    }
-
-    if (message.type === "erase") {
-      const erasedIds: string[] = message.ids;
-      state.shapes = state.shapes.filter((s) => !erasedIds.includes(s.id));
-      clearCanvas(state.shapes, state.canvas!, state.ctx!);
-    }
-
-    if (message.type === "move") {
-      const moved: Shape = message.shape;
-      const idx = state.shapes.findIndex((s) => s.id === moved.id);
-      if (idx !== -1) state.shapes[idx] = moved;
-      clearCanvas(state.shapes, state.canvas!, state.ctx!);
+      case "erase":
+        state.shapes = state.shapes.filter((s) => !message.ids.includes(s.id));
+        clearCanvas(state.shapes, state.canvas!, state.ctx!);
+        break;
     }
   };
 }
 
+// 🔹 Event senders
 export function wsDraw(shape: Shape) {
   if (!state.isServerMode) return;
-  state.socket!.send(JSON.stringify({ type: "draw", shape, roomId: state.roomId }));
+  state.socket!.send(
+    JSON.stringify({ type: "draw", shape, slug: state.roomId })
+  );
 }
 
 export function wsErase(ids: string[]) {
   if (!state.isServerMode) return;
-  state.socket!.send(JSON.stringify({ type: "erase", ids, roomId: state.roomId }));
+  state.socket!.send(
+    JSON.stringify({ type: "erase", ids, slug: state.roomId })
+  );
 }
 
 export function wsMove(shape: Shape) {
   if (!state.isServerMode) return;
-  state.socket!.send(JSON.stringify({ type: "move", shape, roomId: state.roomId }));
+  state.socket!.send(
+    JSON.stringify({ type: "move", shape, slug: state.roomId })
+  );
+}
+
+export function wsUpdate(shape: Shape) {
+  if (!state.isServerMode) return;
+  state.socket!.send(
+    JSON.stringify({ type: "update", shape, slug: state.roomId })
+  );
+}
+
+export function wsResize(shape: Shape) {
+  if (!state.isServerMode) return;
+  state.socket!.send(
+    JSON.stringify({ type: "resize", shape, slug: state.roomId })
+  );
 }

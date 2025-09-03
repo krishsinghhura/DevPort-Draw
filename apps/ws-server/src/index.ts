@@ -1,3 +1,4 @@
+// ws-server/index.ts
 import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/servers-common/config";
@@ -8,7 +9,7 @@ import { flushAllRooms } from "./utils/flushWoker";
 
 const wss = new WebSocketServer({ port: 3002 });
 
-//Array for storage of the users who are in the room
+// 🔹 User session type
 type UserSession = {
   userId: number;
   rooms: string[]; // slugs
@@ -17,7 +18,7 @@ type UserSession = {
 
 const users: UserSession[] = [];
 
-
+// --- JWT verification ---
 function checkUser(token: string): number | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -28,6 +29,7 @@ function checkUser(token: string): number | null {
   }
 }
 
+// --- Local broadcast ---
 function broadcastLocal(slug: string, payload: any) {
   const msg = JSON.stringify(payload);
   users.forEach((user) => {
@@ -37,24 +39,49 @@ function broadcastLocal(slug: string, payload: any) {
   });
 }
 
-cron.schedule("*/1 * * * *", async () => {
-  console.log("⏳ Running flush job...");
-  await flushAllRooms();
-});
+// --- Flush job ---
+// cron.schedule("*/1 * * * *", async () => {
+//   console.log("⏳ Running flush job...");
+//   await flushAllRooms();
+// });
 
-//Event key redis for adding more events
+// --- Save events in Redis ---
 async function saveEvent(slug: string, payload: any) {
+  // Only save if not history
+  if (payload.origin === "history") return;
   await redisClient.rPush(`room:${slug}:events`, JSON.stringify(payload));
 }
 
-//Caches the events from DB
+// --- Persist events in DB ---
+async function persistEvent(slug: string, payload: any, userId: number) {
+  if (payload.origin === "history") return; // skip history
+
+  const room = await prismaClient.room.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+
+  if (!room) {
+    console.error(`❌ No room found with slug=${slug}, event not saved`);
+    return;
+  }
+
+  await prismaClient.chatHistory.create({
+    data: {
+      message: JSON.stringify(payload),
+      userId,
+      roomId: room.id,
+    },
+  });
+}
+
+// --- Load past events ---
 async function loadRoomHistory(slug: string) {
   const cached = await redisClient.lRange(`room:${slug}:cache`, 0, -1);
   if (cached.length > 0) {
-    return cached.map((c) => JSON.parse(c));
+    return cached.map((c) => ({ ...JSON.parse(c), origin: "history" }));
   }
 
-  
   const history = await prismaClient.chatHistory.findMany({
     where: { room: { slug } },
     orderBy: { createdAt: "asc" },
@@ -62,24 +89,24 @@ async function loadRoomHistory(slug: string) {
 
   const events = history.map((h) => {
     try {
-      return JSON.parse(h.message);
+      return { ...JSON.parse(h.message), origin: "history" };
     } catch {
-      return { type: "chat", text: h.message, userId: h.userId };
+      return { type: "chat", text: h.message, userId: h.userId, origin: "history" };
     }
   });
 
-  
   if (events.length > 0) {
     await redisClient.rPush(
       `room:${slug}:cache`,
       events.map((e) => JSON.stringify(e))
     );
-    await redisClient.expire(`room:${slug}:cache`, 60 * 5); 
+    await redisClient.expire(`room:${slug}:cache`, 60 * 5);
   }
 
   return events;
 }
 
+// --- Setup Redis pub/sub ---
 async function setupRedisPubSub() {
   const sub = redisClient.duplicate();
   await sub.connect();
@@ -91,12 +118,14 @@ async function setupRedisPubSub() {
   });
 }
 
+// --- Init server ---
 (async () => {
   await connectRedis();
   await setupRedisPubSub();
   console.log("✅ Redis connected, WebSocket server running on :3002");
 })();
 
+// --- WebSocket handling ---
 wss.on("connection", async (ws, request) => {
   wss.on("error", console.error);
 
@@ -150,30 +179,12 @@ wss.on("connection", async (ws, request) => {
       session.rooms = session.rooms.filter((r) => r !== slug);
     }
 
-    // --- CHAT MESSAGE ---
-    if (type === "chat") {
-      const { message } = parsed;
-      const payload = { type: "chat", message, slug, userId };
-
+    // --- HANDLE USER EVENTS ---
+    const eventTypes = ["chat", "draw", "erase", "move", "update", "resize"];
+    if (eventTypes.includes(type)) {
+      const payload = { ...parsed, slug, userId }; // Do not add origin:history
       await saveEvent(slug, payload);
-      await redisClient.publish(`room:${slug}`, JSON.stringify(payload));
-    }
-
-    // --- DRAW SHAPE ---
-    if (type === "draw") {
-      const { shape, state } = parsed;
-      const payload = { type: "draw", shape, slug, userId };
-
-      await saveEvent(slug, payload);
-      await redisClient.publish(`room:${slug}`, JSON.stringify(payload));
-    }
-
-    // --- ERASE SHAPES ---
-    if (type === "erase") {
-      const { ids } = parsed;
-      const payload = { type: "erase", ids, slug, userId };
-
-      await saveEvent(slug, payload);
+      await persistEvent(slug, payload, userId);
       await redisClient.publish(`room:${slug}`, JSON.stringify(payload));
     }
   });

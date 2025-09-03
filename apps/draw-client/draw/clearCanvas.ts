@@ -5,11 +5,10 @@ import { state } from "./state";
 
 // Draws an infinite-looking grid
 function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number) {
-  const step = 50; // grid spacing in world units
+  const step = 50;
   ctx.strokeStyle = "#333";
   ctx.lineWidth = 0.5;
 
-  // Because we are in world coordinates, we can draw a repeating pattern
   const startX = -width;
   const endX = width * 2;
   const startY = -height;
@@ -30,23 +29,50 @@ function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number) 
   }
 }
 
+// draw resize handles around a shape
+function drawHandles(ctx: CanvasRenderingContext2D, shape: Shape) {
+  const handles: { x: number; y: number }[] = [];
+
+  if (shape.type === "rect") {
+    handles.push(
+      { x: shape.x, y: shape.y },
+      { x: shape.x + shape.width, y: shape.y },
+      { x: shape.x, y: shape.y + shape.height },
+      { x: shape.x + shape.width, y: shape.y + shape.height }
+    );
+  } else if (shape.type === "circle") {
+    handles.push(
+      { x: shape.centerX + shape.radius, y: shape.centerY },
+      { x: shape.centerX - shape.radius, y: shape.centerY },
+      { x: shape.centerX, y: shape.centerY + shape.radius },
+      { x: shape.centerX, y: shape.centerY - shape.radius }
+    );
+  } else if (shape.type === "line" || shape.type === "arrow") {
+    handles.push(
+      { x: shape.x1, y: shape.y1 },
+      { x: shape.x2, y: shape.y2 }
+    );
+  }
+
+  ctx.fillStyle = "red";
+  handles.forEach((h) => {
+    ctx.fillRect(h.x - 4, h.y - 4, 8, 8);
+  });
+}
+
 export function clearCanvas(
   existingShapes: Shape[],
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D
 ) {
-  // Clear the whole screen
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Apply camera transform (pan + zoom)
   ctx.save();
   ctx.translate(state.camera.offsetX, state.camera.offsetY);
   ctx.scale(state.camera.scale, state.camera.scale);
 
-  // Draw background grid (optional, looks infinite when panning/zooming)
   drawGrid(ctx, canvas.width, canvas.height);
 
-  // Draw all shapes in world coordinates
   existingShapes.forEach((shape) => {
     ctx.strokeStyle = "white";
     ctx.fillStyle = "white";
@@ -55,24 +81,20 @@ export function clearCanvas(
       case "rect":
         ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
         break;
-
       case "circle":
         ctx.beginPath();
         ctx.arc(shape.centerX, shape.centerY, shape.radius, 0, Math.PI * 2);
         ctx.stroke();
         break;
-
       case "line":
         ctx.beginPath();
         ctx.moveTo(shape.x1, shape.y1);
         ctx.lineTo(shape.x2, shape.y2);
         ctx.stroke();
         break;
-
       case "arrow":
         drawArrow(ctx, shape.x1, shape.y1, shape.x2, shape.y2);
         break;
-
       case "pencil":
         if (shape.path.length > 1) {
           ctx.beginPath();
@@ -81,15 +103,18 @@ export function clearCanvas(
           ctx.stroke();
         }
         break;
-
       case "text":
         ctx.fillStyle = "black";
         ctx.font = "20px Arial";
         ctx.fillText(shape.text, shape.x, shape.y);
         break;
     }
+
+    // draw resize handles if selected
+    if (state.selectedShape && state.selectedShape.id === shape.id) {
+      drawHandles(ctx, shape);
+    }
   });
 
-  // Restore transform so UI overlays (like selection boxes) can be drawn later in screen coords
   ctx.restore();
 }
