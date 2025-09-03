@@ -8,10 +8,10 @@ import { getOldShapes } from "./api";
 import type { Tool, Shape } from "./types";
 
 export async function initDraw(
-  canvas: HTMLCanvasElement,
-  getTool: () => Tool,
-  roomId?: string | null,
-  socket?: WebSocket | null
+  canvas: HTMLCanvasElement, //Where the user draws
+  getTool: () => Tool, //Which tool is selected now
+  roomId?: string | null, //in which Room the user is
+  socket?: WebSocket | null //socket ctx
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;

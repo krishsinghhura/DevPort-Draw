@@ -16,7 +16,11 @@ implement redis - done
 
 implement redis for users in ws-server as well - done
 
-implement queue for flushing
+implement queue for flushing- done using cron
+
+Add panning and zooming
+
+resizing
 
 add signin and signup in frontend 
 

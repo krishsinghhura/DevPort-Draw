@@ -8,6 +8,7 @@ import { flushAllRooms } from "./utils/flushWoker";
 
 const wss = new WebSocketServer({ port: 3002 });
 
+//Array for storage of the users who are in the room
 type UserSession = {
   userId: number;
   rooms: string[]; // slugs
@@ -16,9 +17,7 @@ type UserSession = {
 
 const users: UserSession[] = [];
 
-/**
- * Decode and verify JWT
- */
+
 function checkUser(token: string): number | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -29,9 +28,6 @@ function checkUser(token: string): number | null {
   }
 }
 
-/**
- * Send event to all clients in the same room (local server only)
- */
 function broadcastLocal(slug: string, payload: any) {
   const msg = JSON.stringify(payload);
   users.forEach((user) => {
@@ -41,33 +37,24 @@ function broadcastLocal(slug: string, payload: any) {
   });
 }
 
-/**
- * Flush job runs every 1 min
- */
 cron.schedule("*/1 * * * *", async () => {
   console.log("⏳ Running flush job...");
   await flushAllRooms();
 });
 
-/**
- * Save live event in Redis list (for flush worker)
- */
+//Event key redis for adding more events
 async function saveEvent(slug: string, payload: any) {
   await redisClient.rPush(`room:${slug}:events`, JSON.stringify(payload));
 }
 
-/**
- * Load history for a room (slug):
- *   1. Try Redis cache (room:<slug>:cache)
- *   2. If empty, load from DB and cache it
- */
+//Caches the events from DB
 async function loadRoomHistory(slug: string) {
   const cached = await redisClient.lRange(`room:${slug}:cache`, 0, -1);
   if (cached.length > 0) {
     return cached.map((c) => JSON.parse(c));
   }
 
-  // fallback to DB
+  
   const history = await prismaClient.chatHistory.findMany({
     where: { room: { slug } },
     orderBy: { createdAt: "asc" },
@@ -81,21 +68,18 @@ async function loadRoomHistory(slug: string) {
     }
   });
 
-  // cache in Redis (cache only, not events)
+  
   if (events.length > 0) {
     await redisClient.rPush(
       `room:${slug}:cache`,
       events.map((e) => JSON.stringify(e))
     );
-    await redisClient.expire(`room:${slug}:cache`, 60 * 5); // 5 min TTL
+    await redisClient.expire(`room:${slug}:cache`, 60 * 5); 
   }
 
   return events;
 }
 
-/**
- * Redis Pub/Sub for broadcasting to all servers
- */
 async function setupRedisPubSub() {
   const sub = redisClient.duplicate();
   await sub.connect();
