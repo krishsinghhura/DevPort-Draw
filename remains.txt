@@ -2,10 +2,12 @@ Add panning and zooming - done
 
 resizing - done
 
+manage room members
+
+theme
+
+add Ai implementattion
+
 add signin and signup in frontend 
 
 Add a dashboard
-
-manage room members
-
-add Ai implementattion

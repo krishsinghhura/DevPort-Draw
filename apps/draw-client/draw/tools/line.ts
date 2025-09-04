@@ -7,6 +7,6 @@ export function previewLine(ctx: CanvasRenderingContext2D, startX: number, start
   ctx.stroke();
 }
 
-export function finalizeLine(startX: number, startY: number, x: number, y: number): Shape {
-  return { type: "line", x1: startX, y1: startY, x2: x, y2: y };
+export function finalizeLine(startX: number, startY: number, x: number, y: number, id:string): Shape {
+  return { id,type: "line", x1: startX, y1: startY, x2: x, y2: y };
 }

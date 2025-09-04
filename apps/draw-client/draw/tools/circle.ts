@@ -7,8 +7,9 @@ export function previewCircle(ctx: CanvasRenderingContext2D, startX: number, sta
   ctx.stroke();
 }
 
-export function finalizeCircle(startX: number, startY: number, x: number, y: number): Shape {
+export function finalizeCircle(startX: number, startY: number, x: number, y: number,id:string): Shape {
   return {
+    id,
     type: "circle",
     centerX: startX,
     centerY: startY,

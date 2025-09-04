@@ -18,7 +18,7 @@ export function setupWS() {
 
   state.socket.onopen = () => {
     state.socket!.send(
-      JSON.stringify({ type: "join-room", slug: state.roomId })
+      JSON.stringify({ type: "join-room", roomId: state.roomId })
     );
   };
 
@@ -89,34 +89,34 @@ export function setupWS() {
 export function wsDraw(shape: Shape) {
   if (!state.isServerMode) return;
   state.socket!.send(
-    JSON.stringify({ type: "draw", shape, slug: state.roomId })
+    JSON.stringify({ type: "draw", shape, roomId: state.roomId })
   );
 }
 
 export function wsErase(ids: string[]) {
   if (!state.isServerMode) return;
   state.socket!.send(
-    JSON.stringify({ type: "erase", ids, slug: state.roomId })
+    JSON.stringify({ type: "erase", ids, roomId: state.roomId })
   );
 }
 
 export function wsMove(shape: Shape) {
   if (!state.isServerMode) return;
   state.socket!.send(
-    JSON.stringify({ type: "move", shape, slug: state.roomId })
+    JSON.stringify({ type: "move", shape, roomId: state.roomId })
   );
 }
 
 export function wsUpdate(shape: Shape) {
   if (!state.isServerMode) return;
   state.socket!.send(
-    JSON.stringify({ type: "update", shape, slug: state.roomId })
+    JSON.stringify({ type: "update", shape, roomId: state.roomId })
   );
 }
 
 export function wsResize(shape: Shape) {
   if (!state.isServerMode) return;
   state.socket!.send(
-    JSON.stringify({ type: "resize", shape, slug: state.roomId })
+    JSON.stringify({ type: "resize", shape, roomId: state.roomId })
   );
 }

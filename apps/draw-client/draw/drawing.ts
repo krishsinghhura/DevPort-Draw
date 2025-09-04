@@ -31,16 +31,16 @@ export function finalizeTool(
 ): Shape | null {
   switch (tool) {
     case "rect": {
-      const s = { ...finalizeRect(startX, startY, x, y), id: makeId() };
+      const s = { ...finalizeRect(startX, startY, x, y,makeId())};
       if ("width" in s && "height" in s) {
         if (s.width === 0 || s.height === 0) return null;
       }
       return s;
     }
-    case "circle": return { ...finalizeCircle(startX, startY, x, y), id: makeId() };
-    case "line":   return { ...finalizeLine(startX, startY, x, y), id: makeId() };
-    case "arrow":  return { ...finalizeArrow(startX, startY, x, y), id: makeId() };
-    case "pencil": return { ...finalizePencil(currentPath), id: makeId() };
+    case "circle": return { ...finalizeCircle(startX, startY, x, y,makeId()) };
+    case "line":   return { ...finalizeLine(startX, startY, x, y,makeId()) };
+    case "arrow":  return { ...finalizeArrow(startX, startY, x, y,makeId()) };
+    case "pencil": return { ...finalizePencil(currentPath,makeId()) };
   }
   return null;
 }

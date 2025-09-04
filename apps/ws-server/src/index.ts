@@ -12,7 +12,7 @@ const wss = new WebSocketServer({ port: 3002 });
 // 🔹 User session type
 type UserSession = {
   userId: number;
-  rooms: string[]; // slugs
+  rooms: number[]; // store roomIds instead of slugs
   ws: WebSocket;
 };
 
@@ -30,39 +30,38 @@ function checkUser(token: string): number | null {
 }
 
 // --- Local broadcast ---
-function broadcastLocal(slug: string, payload: any) {
+function broadcastLocal(roomId: number, payload: any) {
   const msg = JSON.stringify(payload);
   users.forEach((user) => {
-    if (user.rooms.includes(slug)) {
+    if (user.rooms.includes(roomId)) {
       user.ws.send(msg);
     }
   });
 }
 
 // --- Flush job ---
-// cron.schedule("*/1 * * * *", async () => {
-//   console.log("⏳ Running flush job...");
-//   await flushAllRooms();
-// });
+cron.schedule("*/1 * * * *", async () => {
+  console.log("⏳ Running flush job...");
+  await flushAllRooms();
+});
 
 // --- Save events in Redis ---
-async function saveEvent(slug: string, payload: any) {
-  // Only save if not history
+async function saveEvent(roomId: number, payload: any) {
   if (payload.origin === "history") return;
-  await redisClient.rPush(`room:${slug}:events`, JSON.stringify(payload));
+  await redisClient.rPush(`room:${roomId}:events`, JSON.stringify(payload));
 }
 
 // --- Persist events in DB ---
-async function persistEvent(slug: string, payload: any, userId: number) {
-  if (payload.origin === "history") return; // skip history
+async function persistEvent(roomId: number, payload: any, userId: number) {
+  if (payload.origin === "history") return;
 
   const room = await prismaClient.room.findUnique({
-    where: { slug },
+    where: { id: roomId },
     select: { id: true },
   });
 
   if (!room) {
-    console.error(`❌ No room found with slug=${slug}, event not saved`);
+    console.error(`❌ No room found with id=${roomId}, event not saved`);
     return;
   }
 
@@ -76,14 +75,16 @@ async function persistEvent(slug: string, payload: any, userId: number) {
 }
 
 // --- Load past events ---
-async function loadRoomHistory(slug: string) {
-  const cached = await redisClient.lRange(`room:${slug}:cache`, 0, -1);
+async function loadRoomHistory(roomId: number) {
+  const redisKey = `room:${roomId}:cache`;
+
+  const cached = await redisClient.lRange(redisKey, 0, -1);
   if (cached.length > 0) {
     return cached.map((c) => ({ ...JSON.parse(c), origin: "history" }));
   }
 
   const history = await prismaClient.chatHistory.findMany({
-    where: { room: { slug } },
+    where: { roomId },
     orderBy: { createdAt: "asc" },
   });
 
@@ -96,11 +97,8 @@ async function loadRoomHistory(slug: string) {
   });
 
   if (events.length > 0) {
-    await redisClient.rPush(
-      `room:${slug}:cache`,
-      events.map((e) => JSON.stringify(e))
-    );
-    await redisClient.expire(`room:${slug}:cache`, 60 * 5);
+    await redisClient.rPush(redisKey, events.map((e) => JSON.stringify(e)));
+    await redisClient.expire(redisKey, 60 * 5);
   }
 
   return events;
@@ -113,8 +111,8 @@ async function setupRedisPubSub() {
 
   sub.pSubscribe("room:*", (message, channel) => {
     const payload = JSON.parse(message);
-    const slug = payload.slug;
-    broadcastLocal(slug, payload);
+    const roomId = Number(payload.roomId);
+    broadcastLocal(roomId, payload);
   });
 }
 
@@ -153,20 +151,20 @@ wss.on("connection", async (ws, request) => {
       return;
     }
 
-    const { type, slug } = parsed;
+    const { type, roomId } = parsed;
 
     // --- JOIN ROOM ---
     if (type === "join-room") {
-      console.log(`User ${userId} joined room ${slug}`);
-      if (!session.rooms.includes(slug)) {
-        session.rooms.push(slug);
+      console.log(`User ${userId} joined room ${roomId}`);
+      if (!session.rooms.includes(roomId)) {
+        session.rooms.push(roomId);
 
-        const events = await loadRoomHistory(slug);
+        const events = await loadRoomHistory(roomId);
 
         ws.send(
           JSON.stringify({
             type: "init-history",
-            slug,
+            roomId,
             events,
           })
         );
@@ -175,17 +173,17 @@ wss.on("connection", async (ws, request) => {
 
     // --- LEAVE ROOM ---
     if (type === "leave-room") {
-      console.log(`User ${userId} left room ${slug}`);
-      session.rooms = session.rooms.filter((r) => r !== slug);
+      console.log(`User ${userId} left room ${roomId}`);
+      session.rooms = session.rooms.filter((r) => r !== roomId);
     }
 
     // --- HANDLE USER EVENTS ---
     const eventTypes = ["chat", "draw", "erase", "move", "update", "resize"];
     if (eventTypes.includes(type)) {
-      const payload = { ...parsed, slug, userId }; // Do not add origin:history
-      await saveEvent(slug, payload);
-      await persistEvent(slug, payload, userId);
-      await redisClient.publish(`room:${slug}`, JSON.stringify(payload));
+      const payload = { ...parsed, roomId, userId };
+      await saveEvent(roomId, payload);
+      await persistEvent(roomId, payload, userId);
+      await redisClient.publish(`room:${roomId}`, JSON.stringify(payload));
     }
   });
 

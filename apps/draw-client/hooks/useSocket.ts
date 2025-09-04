@@ -2,7 +2,7 @@
 import { log } from "console";
 import { useState,useEffect } from "react"
 
-export function useSocket(roomId?:string){
+export function useSocket(roomId?:number){
     const [loading,setLoading]=useState(true);
     const [socket,setSocket]=useState<WebSocket>()
 

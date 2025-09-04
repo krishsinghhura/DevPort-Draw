@@ -5,7 +5,6 @@ import { middleware } from "./middleware";
 import { SignupSchema, SigninSchema, CreateRoom } from "@repo/common/zodTypes";
 import { prismaClient } from "@repo/db/client";
 import bcrypt from "bcrypt-ts";
-import { getRoomId } from "./utils/getRoomId";
 import { redisClient, connectRedis } from "@repo/servers-common/redisClient";
 
 const app = express();
@@ -105,25 +104,20 @@ app.post("/create-room", middleware, async (req, res) => {
  * Fetch room history
  * → Redis cache first, fallback to DB
  */
-app.get("/room/:slug", async (req, res) => {
-  const slug = req.params.slug;
-  const redisKey = `room:${slug}:events`;
+app.get("/room/:roomId", async (req, res) => {
+  const roomId = Number(req.params.roomId);
+  const redisKey = `room:${roomId}:events`;
 
   try {
-    // 1️⃣ Try Redis first
+    // 1️⃣ Try Redis
     const cached = await redisClient.lRange(redisKey, 0, -1);
     if (cached.length > 0) {
       const events = cached.map((m) => JSON.parse(m));
-      console.log(`[Cache] Returned events for room:${slug}`);
+      console.log(`[Cache] Returned events for roomId:${roomId}`);
       return res.json(events);
     }
 
     // 2️⃣ Fallback to DB
-    const roomId = await getRoomId(slug);
-    if (roomId === null) {
-      return res.status(404).json({ error: "Room not found" });
-    }
-
     const rows = await prismaClient.chatHistory.findMany({
       where: { roomId },
       orderBy: { createdAt: "asc" },
@@ -132,25 +126,26 @@ app.get("/room/:slug", async (req, res) => {
 
     const events = rows.map((r) => {
       try {
-        return JSON.parse(r.message); // if structured JSON
+        return JSON.parse(r.message);
       } catch {
-        return { type: "chat", message: r.message, userId: r.userId, roomId: slug };
+        return { type: "chat", message: r.message, userId: r.userId, roomId };
       }
     });
 
-    // 3️⃣ Cache in Redis for next time
+    // 3️⃣ Cache
     if (events.length > 0) {
       await redisClient.rPush(redisKey, events.map((e) => JSON.stringify(e)));
-      await redisClient.expire(redisKey, 24 * 60 * 60); // 24h TTL
+      await redisClient.expire(redisKey, 24 * 60 * 60);
     }
 
-    console.log(`[DB] Returned events for room:${slug}`);
+    console.log(`[DB] Returned events for roomId:${roomId}`);
     return res.json(events);
   } catch (error: any) {
     console.error("Error fetching room history:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 app.listen(3001, () => {
   console.log("✅ HTTP server running on :3001");

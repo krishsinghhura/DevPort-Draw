@@ -8,6 +8,6 @@ export function previewPencil(ctx: CanvasRenderingContext2D, path: Point[]) {
   ctx.stroke();
 }
 
-export function finalizePencil(path: Point[]): Shape {
-  return { type: "pencil", path };
+export function finalizePencil(path: Point[],id:string): Shape {
+  return { id,type: "pencil", path };
 }
