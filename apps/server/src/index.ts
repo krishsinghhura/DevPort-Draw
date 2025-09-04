@@ -90,7 +90,8 @@ app.post("/create-room", middleware, async (req, res) => {
     const room = await prismaClient.room.create({
       data: {
         slug: parseddata.data.slug,
-        adminId: Number(userId),
+        adminId: String(userId),
+        members: { connect: { id: String(userId) } } // Admin auto joins
       },
     });
 
@@ -100,12 +101,13 @@ app.post("/create-room", middleware, async (req, res) => {
   }
 });
 
+
 /**
  * Fetch room history
  * → Redis cache first, fallback to DB
  */
 app.get("/room/:roomId", async (req, res) => {
-  const roomId = Number(req.params.roomId);
+  const roomId = req.params.roomId;
   const redisKey = `room:${roomId}:events`;
 
   try {
@@ -145,6 +147,69 @@ app.get("/room/:roomId", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.post("/room/:roomId/remove", middleware, async (req, res) => {
+  const { roomId } = req.params;
+  const { userIdToRemove } = req.body;
+  const userId = req.userId;
+
+  const room = await prismaClient.room.findUnique({ where: { id: roomId } });
+  if (!room) return res.status(404).json({ message: "Room not found" });
+  if (room.adminId !== userId) return res.status(403).json({ message: "Only admin can remove members" });
+
+  await prismaClient.room.update({
+    where: { id: roomId },
+    data: { members: { disconnect: { id: userIdToRemove } } },
+  });
+
+  res.json({ message: "User removed" });
+});
+
+app.post("/room/:roomId/join", middleware, async (req, res) => {
+  const { roomId } = req.params;
+  const userId = req.userId;
+
+  const room = await prismaClient.room.findUnique({
+    where: { id: roomId },
+    include: { members: true },
+  });
+
+  if (!room) return res.status(404).json({ message: "Room not found" });
+
+  if (!room.isPublic || !room.publicExpiresAt || room.publicExpiresAt < new Date()) {
+    return res.status(403).json({ message: "Room is private or link expired" });
+  }
+
+  // Add user if not already a member
+  const alreadyMember = room.members.some((m) => m.id === userId);
+  if (!alreadyMember) {
+    await prismaClient.room.update({
+      where: { id: roomId },
+      data: { members: { connect: { id: userId?.toString() } } },
+    });
+  }
+
+  res.json({ message: "Joined successfully" });
+});
+
+app.post("/room/:roomId/public", middleware, async (req, res) => {
+  const { roomId } = req.params;
+  const userId = req.userId;
+
+  const room = await prismaClient.room.findUnique({ where: { id: roomId } });
+  if (!room) return res.status(404).json({ message: "Room not found" });
+  if (room.adminId !== userId) return res.status(403).json({ message: "Only admin can make public" });
+
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hrs
+
+  await prismaClient.room.update({
+    where: { id: roomId },
+    data: { isPublic: true, publicExpiresAt: expiresAt },
+  });
+
+  res.json({ message: "Room is now public", expiresAt });
+});
+
 
 
 app.listen(3001, () => {

@@ -30,7 +30,7 @@ export const state = {
 
   // environment
   getTool: null as (() => Tool) | null,
-  roomId: null as number | null, // 🔹 now a number
+  roomId: null as string | null, // 🔹 now a number
   socket: null as WebSocket | null,
   isServerMode: false,
 
@@ -51,7 +51,7 @@ export function setEnv(opts: {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   getTool: () => Tool;
-  roomId?: number | null;
+  roomId?: string | null;
   socket?: WebSocket | null;
 }) {
   state.canvas = opts.canvas;

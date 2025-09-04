@@ -1,6 +1,6 @@
 import { prismaClient } from "@repo/db/client";
 
-export async function getRoomId(name:string):Promise<number | null>{
+export async function getRoomId(name:string):Promise<string | null>{
     try {
         const room=await prismaClient.room.findFirst({
             where:{

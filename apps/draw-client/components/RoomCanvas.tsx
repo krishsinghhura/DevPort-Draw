@@ -6,7 +6,7 @@ import Toolbar from "./Toolbar";
 import DevPortDrawLoader from "../components/ui/loader";
 import { useState } from "react";
 
-export function Roomcanvas({ roomId }: { roomId: number }) {
+export function Roomcanvas({ roomId }: { roomId: string }) {
   const { socket, loading } = useSocket(roomId);
   const [tool, setTool] = useState<Tool>("select"); // use central type
 

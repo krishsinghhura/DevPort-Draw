@@ -12,13 +12,13 @@ function safeParse<T>(raw: string): T | null {
 }
 
 type EventPayload =
-  | { type: "chat"; message: string; userId: number; roomId: number; id?: string; origin?: string }
-  | { type: "draw"; shape: any; userId: number; roomId: number; id?: string; origin?: string }
-  | { type: "erase"; ids: string[]; userId: number; roomId: number; id?: string; origin?: string }
-  | { type: "move"; shape: any; userId: number; roomId: number; id?: string; origin?: string }
-  | { type: "update"; shape: any; userId: number; roomId: number; id?: string; origin?: string };
+  | { type: "chat"; message: string; userId: string; roomId: string; id?: string; origin?: string }
+  | { type: "draw"; shape: any; userId: string; roomId: string; id?: string; origin?: string }
+  | { type: "erase"; ids: string[]; userId: string; roomId: string; id?: string; origin?: string }
+  | { type: "move"; shape: any; userId: string; roomId: string; id?: string; origin?: string }
+  | { type: "update"; shape: any; userId: string; roomId: string; id?: string; origin?: string };
 
-export async function flushRoomEvents(roomId: number) {
+export async function flushRoomEvents(roomId: string) {
   const redisKey = `room:${roomId}:events`;
 
   // 1️⃣ Fetch all unsaved events from Redis
@@ -68,9 +68,8 @@ export async function flushAllRooms() {
   for (const key of keys) {
     const parts = key.split(":");
     if (parts.length < 3) continue;
-    const roomId = Number(parts[1]);
-    if (isNaN(roomId)) continue;
-
+    const roomId = parts[1]!;
+    
     await flushRoomEvents(roomId);
   }
 }

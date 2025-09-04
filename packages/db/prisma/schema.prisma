@@ -7,33 +7,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-model User{
-  id Int @id @default(autoincrement())
-  name String?
-  email String @unique
-  password String
-  profilePhoto String?
-  createdAt DateTime @default(now())
-  room Room[]
-  chats ChatHistory[]
+model User {
+  id         String        @id @default(uuid())
+  name       String?
+  email      String        @unique
+  password   String
+  createdAt  DateTime      @default(now())
+  rooms      Room[]        @relation("UserRooms")
+  chats      ChatHistory[]
+  adminRooms Room[]        @relation("AdminRooms")
 }
 
-model Room{
-  id Int @id @default(autoincrement())
-  slug String @unique
-  createdAt DateTime @default(now())
-  adminId Int
-  admin User @relation(fields: [adminId],references: [id])
-  chats ChatHistory[]
+model Room {
+  id        String        @id @default(uuid())
+  slug      String        @unique
+  createdAt DateTime      @default(now())
+  adminId   String
+  admin     User          @relation("AdminRooms", fields: [adminId], references: [id])
+  chats     ChatHistory[]
+
+  members         User[]    @relation("UserRooms")
+  isPublic        Boolean   @default(false)
+  publicExpiresAt DateTime?
 }
 
-model ChatHistory{
-  id Int @id @default(autoincrement())
-  message String
-  userId Int
-  roomId Int
-  createdAt DateTime @default(now()) 
-  room Room @relation(fields: [roomId],references: [id])
-  user User @relation(fields: [userId],references: [id])
+model ChatHistory {
+  id        String   @id @default(uuid())
+  message   String
+  userId    String
+  roomId    String
+  createdAt DateTime @default(now())
+  room      Room     @relation(fields: [roomId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }

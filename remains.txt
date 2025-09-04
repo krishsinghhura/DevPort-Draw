@@ -11,3 +11,7 @@ add Ai implementattion
 add signin and signup in frontend 
 
 Add a dashboard
+
+
+errors:-
+1. While flushing everything is going twice

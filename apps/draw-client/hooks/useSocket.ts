@@ -2,12 +2,12 @@
 import { log } from "console";
 import { useState,useEffect } from "react"
 
-export function useSocket(roomId?:number){
+export function useSocket(roomId?:string){
     const [loading,setLoading]=useState(true);
     const [socket,setSocket]=useState<WebSocket>()
 
     useEffect(()=>{
-        const ws=new WebSocket("ws://localhost:3002?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImlhdCI6MTc1NjkzNDU0MX0.FGczlbOTz6jAfDTk76AAu-c-zNjJ750upFFGFggEWZA");
+        const ws=new WebSocket("ws://localhost:3002?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmMDIxYzhjOC04OTQ5LTRkNjktOTRjOC02MzViMjY0ZTFlNDgiLCJpYXQiOjE3NTcwMjA3MTN9.XbbWDzyzCUsMOyAh6ZxYmfjAtXWe4u7JJq7SPSusJhw");
 
         ws.onopen=()=>{
             console.log("Opening a connection");

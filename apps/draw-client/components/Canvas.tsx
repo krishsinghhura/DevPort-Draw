@@ -8,7 +8,7 @@ export default function Canvas({
   socket,
   tool,
 }: {
-  roomId: number;
+  roomId: string;
   socket: WebSocket;
   tool: Tool;
 }) {
