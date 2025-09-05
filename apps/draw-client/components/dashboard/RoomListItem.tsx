@@ -1,8 +1,8 @@
 'use client';
 
-import { Users, Lock, Unlock, Copy, Grid3X3, Trash2, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Calendar, Users, Globe, Lock, Trash2, ExternalLink } from 'lucide-react';
 
 interface Room {
   id: string;
@@ -20,89 +20,139 @@ interface RoomListItemProps {
 }
 
 export default function RoomListItem({ room, onDelete }: RoomListItemProps) {
-  const [deleting, setDeleting] = useState(false);
-
-  const copyRoomLink = (roomId: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/room/${roomId}`);
-  };
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const router = useRouter();
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${room.slug}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    setDeleting(true);
+    setIsDeleting(true);
     try {
       await onDelete(room.id);
+      setShowDeleteDialog(false);
     } catch (error) {
       console.error('Failed to delete room:', error);
     } finally {
-      setDeleting(false);
+      setIsDeleting(false);
     }
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   return (
-    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-            <Grid3X3 className="w-6 h-6 text-blue-600" />
+    <>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+        <div className="p-6">
+          <div className="flex items-center justify-between">
+            {/* Room Info */}
+            <div className="flex items-center space-x-6 flex-1">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-gray-900 truncate mb-2">
+                  {room.slug}
+                </h3>
+                <div className="flex items-center">
+                  <span 
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      room.isPublic 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {room.isPublic ? (
+                      <>
+                        <Globe className="w-3 h-3 mr-1" />
+                        Public
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3 h-3 mr-1" />
+                        Private
+                      </>
+                    )}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Stats */}
+              <div className="hidden sm:flex items-center space-x-6 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <Users className="w-4 h-4 mr-2" />
+                  <span>{room.memberCount} member{room.memberCount !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span>Created {formatDate(room.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center space-x-2 ml-4">
+              <button
+                onClick={() => router.push(`/room/${room.id}`)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Enter
+              </button>
+              
+              <button 
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 px-3 py-2 rounded-lg transition-colors duration-200"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {room.slug}
-            </h3>
-            <div className="flex items-center space-x-4 text-sm text-gray-500">
-              <div className="flex items-center space-x-1">
-                <Users className="w-4 h-4" />
+
+          {/* Mobile Stats */}
+          <div className="sm:hidden mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center space-x-4 text-sm text-gray-600">
+              <div className="flex items-center">
+                <Users className="w-4 h-4 mr-2" />
                 <span>{room.memberCount} members</span>
               </div>
-              <div className="flex items-center space-x-1">
-                {room.isPublic ? (
-                  <>
-                    <Unlock className="w-4 h-4 text-green-500" />
-                    <span className="text-green-700">Public</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4 text-gray-500" />
-                    <span>Private</span>
-                  </>
-                )}
+              <div className="flex items-center">
+                <Calendar className="w-4 h-4 mr-2" />
+                <span>{formatDate(room.createdAt)}</span>
               </div>
-              <span>Created {new Date(room.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => copyRoomLink(room.id)}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all"
-            title="Copy room link"
-          >
-            <Copy className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Delete room"
-          >
-            {deleting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Trash2 className="w-4 h-4" />
-            )}
-          </button>
-          <Link
-            href={`/room/${room.id}`}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium"
-          >
-            Enter Room
-          </Link>
-        </div>
       </div>
-    </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Room</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{room.slug}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

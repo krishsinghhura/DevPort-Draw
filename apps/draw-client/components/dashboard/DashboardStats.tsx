@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, Lock, Unlock, Grid3X3 } from 'lucide-react';
+import { Users, Globe, Lock, Activity } from 'lucide-react';
 
 interface Room {
   id: string;
@@ -17,62 +17,57 @@ interface DashboardStatsProps {
 }
 
 export default function DashboardStats({ rooms }: DashboardStatsProps) {
-  const stats = {
-    totalRooms: rooms.length,
-    publicRooms: rooms.filter(r => r.isPublic).length,
-    privateRooms: rooms.filter(r => !r.isPublic).length,
-    totalMembers: rooms.reduce((acc, room) => acc + room.memberCount, 0),
-  };
+  const totalRooms = rooms.length;
+  const publicRooms = rooms.filter(room => room.isPublic).length;
+  const privateRooms = totalRooms - publicRooms;
+  const totalMembers = rooms.reduce((sum, room) => sum + room.memberCount, 0);
+
+  const stats = [
+    {
+      name: 'Total Rooms',
+      value: totalRooms,
+      icon: Activity,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+    },
+    {
+      name: 'Public Rooms',
+      value: publicRooms,
+      icon: Globe,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+    },
+    {
+      name: 'Private Rooms',
+      value: privateRooms,
+      icon: Lock,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+    },
+    {
+      name: 'Total Members',
+      value: totalMembers,
+      icon: Users,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+    },
+  ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Total Rooms</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalRooms}</p>
-          </div>
-          <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-            <Grid3X3 className="w-6 h-6 text-blue-600" />
-          </div>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Public Rooms</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{stats.publicRooms}</p>
-          </div>
-          <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-            <Unlock className="w-6 h-6 text-green-600" />
+      {stats.map((stat) => (
+        <div key={stat.name} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">{stat.name}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
+            </div>
+            <div className={`${stat.bgColor} p-3 rounded-lg`}>
+              <stat.icon className={`w-6 h-6 ${stat.color}`} />
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Private Rooms</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{stats.privateRooms}</p>
-          </div>
-          <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center">
-            <Lock className="w-6 h-6 text-gray-600" />
-          </div>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Total Members</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalMembers}</p>
-          </div>
-          <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
-            <Users className="w-6 h-6 text-purple-600" />
-          </div>
-        </div>
-      </div>
+      ))}
     </div>
   );
 }

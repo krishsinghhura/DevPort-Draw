@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import AuthLayout from "@/components/Auth/AuthLayout";
@@ -9,6 +9,7 @@ import AuthButton from "@/components/Auth/AuthButton";
 import SocialAuth from "@/components/Auth/SocialAuth";
 import { HTTP_BACKEND } from "@/config";
 import { useRouter } from "next/navigation";
+
 export default function SignInPage() {
   const [formData, setFormData] = useState({
     email: "",
@@ -18,7 +19,13 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const router=useRouter();
+  const router = useRouter();
+  useEffect(()=>{
+    const token=localStorage.getItem("token");
+    if(token){
+      router.push("/dashboard");
+    }
+  })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -80,7 +87,7 @@ export default function SignInPage() {
       title="Welcome back"
       subtitle="Sign in to your DevPort Draw account"
     >
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/20">
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/20 dark:border-gray-700/30 transition-colors">
         <SocialAuth mode="signin" />
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -109,7 +116,7 @@ export default function SignInPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 transition-colors"
+              className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
             >
               {showPassword ? (
                 <EyeOff className="w-5 h-5" />
@@ -123,13 +130,13 @@ export default function SignInPage() {
             <label className="flex items-center">
               <input
                 type="checkbox"
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700 dark:focus:ring-blue-400 transition-colors"
               />
-              <span className="ml-2 text-sm text-gray-600">Remember me</span>
+              <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Remember me</span>
             </label>
             <Link
               href="/forgot-password"
-              className="text-sm text-blue-600 hover:text-blue-500 transition-colors"
+              className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
             >
               Forgot password?
             </Link>
@@ -141,11 +148,11 @@ export default function SignInPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Don't have an account?{" "}
             <Link
               href="/signup"
-              className="text-blue-600 hover:text-blue-500 font-semibold transition-colors"
+              className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 font-semibold transition-colors"
             >
               Sign up
             </Link>
