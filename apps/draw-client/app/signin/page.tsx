@@ -66,7 +66,6 @@ export default function SignInPage() {
         setErrors({ email: data.message || "Invalid credentials" });
         return;
       }
-      console.log(data.token);
       
       localStorage.setItem("token", data.token);
       router.push("/dashboard");

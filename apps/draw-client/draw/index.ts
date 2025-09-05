@@ -31,7 +31,6 @@ export async function initDraw(
     try {
       // ✅ now returns Shape[]
       const shapes: Shape[] = await getOldShapes(roomId);
-      console.log("Fetched shapes:", shapes);
 
       state.shapes = shapes;
       clearCanvas(state.shapes, canvas, ctx);
