@@ -260,6 +260,88 @@ app.get("/get-members/:roomId", async (req, res) => {
   return res.json(room?.members);
 });
 
+app.get("/dashboard", middleware, async (req, res) => {
+  const userId = req.userId;
+
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const rooms = await prismaClient.room.findMany({
+      where: {
+        members: { some: { id: String(userId) } },
+      },
+      include: {
+        members: { select: { id: true, name: true } },
+      },
+    });
+
+    const dashboardData = rooms.map((room) => ({
+      id: room.id,
+      slug: room.slug,
+      adminId: room.adminId,
+      isPublic: room.isPublic,
+      publicExpiresAt: room.publicExpiresAt,
+      memberCount: room.members.length,
+    }));
+
+    return res.json({ rooms: dashboardData });
+  } catch (error: any) {
+    console.error("Error fetching dashboard:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Delete Room OR Leave Room
+ */
+app.delete("/room/:roomId", middleware, async (req, res) => {
+  const { roomId } = req.params;
+  const userId = req.userId;
+
+  try {
+    const room = await prismaClient.room.findUnique({
+      where: { id: roomId },
+      include: { members: true },
+    });
+
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    if (room.adminId === userId) {
+      // 🗑️ Admin → delete whole room
+      await prismaClient.room.delete({
+        where: { id: roomId },
+      });
+
+      // Clear Redis cache
+      const cacheKey = `room:${roomId}:cache`;
+      await redisClient.del(cacheKey);
+
+      return res.json({ message: "Room deleted successfully" });
+    } else {
+      // 👤 Non-admin → leave room
+      const isMember = room.members.some((m) => m.id === userId);
+      if (!isMember) {
+        return res.status(400).json({ message: "User is not a member of this room" });
+      }
+
+      await prismaClient.room.update({
+        where: { id: roomId },
+        data: { members: { disconnect: { id: userId?.toString() } } },
+      });
+
+      return res.json({ message: "You have left the room" });
+    }
+  } catch (error: any) {
+    console.error("Error in delete/leave room:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+
 app.listen(3001, () => {
   console.log("✅ HTTP server running on :3001");
 });
