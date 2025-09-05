@@ -4,6 +4,7 @@ import { useSocket } from "@/hooks/useSocket";
 import Canvas from "./Canvas";
 import Toolbar from "./Toolbar";
 import DevPortDrawLoader from "../components/ui/loader";
+import MembersPanel from "./MembersPanel";
 import { useState } from "react";
 
 export function Roomcanvas({ roomId }: { roomId: string }) {
@@ -24,6 +25,7 @@ export function Roomcanvas({ roomId }: { roomId: string }) {
 
       {/* key forces a clean remount if roomId changes, preventing listener leaks */}
       <Canvas key={roomId} roomId={roomId} socket={socket} tool={tool} />
+       <MembersPanel roomId={roomId} isAdmin={true} />
     </div>
   );
 }

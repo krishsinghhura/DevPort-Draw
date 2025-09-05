@@ -7,6 +7,8 @@ import AuthLayout from '@/components/Auth/AuthLayout';
 import AuthInput from '@/components/Auth/AuthInput';
 import AuthButton from '@/components/Auth/AuthButton';
 import SocialAuth from '@/components/Auth/SocialAuth';
+import { HTTP_BACKEND } from '@/config';
+import { useRouter } from 'next/navigation';
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -21,11 +23,11 @@ export default function SignUpPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const router=useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -34,13 +36,8 @@ export default function SignUpPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    }
+    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
 
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -72,28 +69,47 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
 
     setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setLoading(false);
-    
-    // Handle actual sign up here
-    console.log('Sign up:', formData);
+    try {
+      const res = await fetch(`${HTTP_BACKEND}/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrors({ general: data.message || 'Failed to sign up' });
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Save token for authenticated requests
+    router.push("/signin");
+    } catch (err) {
+      console.error('Signup error:', err);
+      setErrors({ general: 'Something went wrong. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getPasswordStrength = () => {
     const password = formData.password;
     let strength = 0;
-    
     if (password.length >= 8) strength++;
     if (/[a-z]/.test(password)) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/\d/.test(password)) strength++;
     if (/[^a-zA-Z\d]/.test(password)) strength++;
-    
     return strength;
   };
 
@@ -110,6 +126,10 @@ export default function SignUpPage() {
         <SocialAuth mode="signup" />
         
         <form onSubmit={handleSubmit} className="space-y-6">
+          {errors.general && (
+            <p className="text-sm text-red-600">{errors.general}</p>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <AuthInput
               label="First name"
@@ -163,7 +183,6 @@ export default function SignUpPage() {
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
             
-            {/* Password strength indicator */}
             {formData.password && (
               <div className="mt-2">
                 <div className="flex space-x-1 mb-1">

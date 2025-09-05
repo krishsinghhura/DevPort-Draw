@@ -1,28 +1,30 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Eye, EyeOff } from 'lucide-react';
-import AuthLayout from '@/components/Auth/AuthLayout';
-import AuthInput from '@/components/Auth/AuthInput';
-import AuthButton from '@/components/Auth/AuthButton';
-import SocialAuth from '@/components/Auth/SocialAuth';
-
+import { useState } from "react";
+import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
+import AuthLayout from "@/components/Auth/AuthLayout";
+import AuthInput from "@/components/Auth/AuthInput";
+import AuthButton from "@/components/Auth/AuthButton";
+import SocialAuth from "@/components/Auth/SocialAuth";
+import { HTTP_BACKEND } from "@/config";
+import { useRouter } from "next/navigation";
 export default function SignInPage() {
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const router=useRouter();
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -30,15 +32,15 @@ export default function SignInPage() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = "Please enter a valid email";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     setErrors(newErrors);
@@ -47,16 +49,31 @@ export default function SignInPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
 
     setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setLoading(false);
-    
-    // Handle actual sign in here
-    console.log('Sign in:', formData);
+    try {
+      const res = await fetch(`${HTTP_BACKEND}/signin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      setLoading(false);
+
+      if (!res.ok) {
+        setErrors({ email: data.message || "Invalid credentials" });
+        return;
+      }
+      console.log(data.token);
+      
+      localStorage.setItem("token", data.token);
+      router.push("/dashboard");
+    } catch (err) {
+      setLoading(false);
+      console.error("Sign-in error:", err);
+    }
   };
 
   return (
@@ -66,7 +83,7 @@ export default function SignInPage() {
     >
       <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/20">
         <SocialAuth mode="signin" />
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <AuthInput
             label="Email address"
@@ -82,7 +99,7 @@ export default function SignInPage() {
           <div className="relative">
             <AuthInput
               label="Password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleInputChange}
@@ -95,7 +112,11 @@ export default function SignInPage() {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 transition-colors"
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </button>
           </div>
 
@@ -122,7 +143,7 @@ export default function SignInPage() {
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Don't have an account?{' '}
+            Don't have an account?{" "}
             <Link
               href="/signup"
               className="text-blue-600 hover:text-blue-500 font-semibold transition-colors"

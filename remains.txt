@@ -2,16 +2,15 @@ Add panning and zooming - done
 
 resizing - done
 
-manage room members
+manage room members - done
+
+add signin and signup in frontend - done
 
 theme
 
 add Ai implementattion
 
-add signin and signup in frontend 
-
 Add a dashboard
 
-
 errors:-
-1. While flushing everything is going twice
+1. While flushing everything is going twice(redis+db not working properly)

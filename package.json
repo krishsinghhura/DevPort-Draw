@@ -22,8 +22,10 @@
     "packages/*"
   ],
   "dependencies": {
+    "@types/cors": "^2.8.19",
     "@types/jsonwebtoken": "^9.0.10",
     "clsx": "^2.1.1",
+    "cors": "^2.8.5",
     "framer-motion": "^12.23.12",
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",

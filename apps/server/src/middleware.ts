@@ -1,20 +1,28 @@
-import { Request,Response,NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/servers-common/config";
 
-export function middleware(req:Request,res:Response,next:NextFunction){
-    const header=req.headers["authorization"]??"";
+export function middleware(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers["authorization"];  
 
-    const decoded=jwt.verify(header,JWT_SECRET);
+  if (!authHeader) {
+    return res.status(401).json({ message: "Missing Authorization header" });
+  }
 
-    if(typeof decoded=="string"){
-        return;
-    }
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : authHeader;
 
-    if(decoded){
-        req.userId=decoded .userId;
-        next();
-    } else {
-        res.status(403).json({message:"Unauthozied"});
-    }
+  const decoded = jwt.verify(token, JWT_SECRET);
+
+  if (typeof decoded == "string") {
+    return;
+  }
+
+  if (decoded) {
+    req.userId = decoded.userId;
+    next();
+  } else {
+    res.status(403).json({ message: "Unauthozied" });
+  }
 }
