@@ -115,16 +115,15 @@ app.post("/create-room", middleware, async (req, res) => {
 
 app.get("/room/:roomId", middleware, async (req, res) => {
   const roomId = req.params.roomId;
-  const redisKey = `room:${roomId}:events`;
-
+  const cacheKey = `room:${roomId}:cache`;
   const userId = req.userId;
-  
 
   if (!userId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
   try {
+    // ✅ Check membership
     const room = await prismaClient.room.findUnique({
       where: { id: roomId },
       include: { members: { select: { id: true } } },
@@ -133,14 +132,8 @@ app.get("/room/:roomId", middleware, async (req, res) => {
     if (!room) {
       return res.status(404).json({ error: "No Room found" });
     }
-    
 
-    const isMember = room.members.some((m) => {
-      return m.id === userId;
-    });
-
-    
-
+    const isMember = room.members.some((m) => m.id === userId);
     if (!isMember) {
       return res.status(403).json({ error: "Not a room member" });
     }
@@ -149,15 +142,14 @@ app.get("/room/:roomId", middleware, async (req, res) => {
   }
 
   try {
-    // 1️⃣ Try Redis
-    const cached = await redisClient.lRange(redisKey, 0, -1);
+    // 1️⃣ Check if already cached
+    const cached = await redisClient.lRange(cacheKey, 0, -1);
     if (cached.length > 0) {
-      const events = cached.map((m) => JSON.parse(m));
-      console.log(`[Cache] Returned events for roomId:${roomId}`);
-      return res.json(events);
+      console.log(`[Cache] Warm cache already exists for roomId:${roomId}`);
+      return res.json({ message: "Cache already warm" });
     }
 
-    // 2️⃣ Fallback to DB
+    // 2️⃣ Warm up cache from DB (but don’t return the events)
     const rows = await prismaClient.chatHistory.findMany({
       where: { roomId },
       orderBy: { createdAt: "asc" },
@@ -172,19 +164,19 @@ app.get("/room/:roomId", middleware, async (req, res) => {
       }
     });
 
-    // 3️⃣ Cache
     if (events.length > 0) {
       await redisClient.rPush(
-        redisKey,
+        cacheKey,
         events.map((e) => JSON.stringify(e))
       );
-      await redisClient.expire(redisKey, 24 * 60 * 60);
+      await redisClient.expire(cacheKey, 24 * 60 * 60);
+      console.log(`[DB→Cache] Warmed up cache for roomId:${roomId}`);
     }
 
-    console.log(`[DB] Returned events for roomId:${roomId}`);
-    return res.json(events);
+    // 🚫 Don’t return DB data — just say cache is ready
+    return res.json({ message: "Cache warmed" });
   } catch (error: any) {
-    console.error("Error fetching room history:", error);
+    console.error("Error warming cache:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });

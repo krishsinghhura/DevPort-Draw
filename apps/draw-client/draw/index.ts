@@ -5,13 +5,13 @@ import { loadGuest } from "./storage";
 import { setupWS } from "./networking/ws";
 import { bindAll } from "./events/bind";
 import { getOldShapes } from "./api";
-import type { Tool, Shape } from "./types";
+import type { Tool } from "./types";
 
 export async function initDraw(
-  canvas: HTMLCanvasElement, //Where the user draws
-  getTool: () => Tool, //Which tool is selected now
-  roomId?: string | null, //in which Room the user is
-  socket?: WebSocket | null //socket ctx
+  canvas: HTMLCanvasElement,
+  getTool: () => Tool,
+  roomId?: string | null,
+  socket?: WebSocket | null
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -29,13 +29,10 @@ export async function initDraw(
 
   if (state.isServerMode && roomId) {
     try {
-      // ✅ now returns Shape[]
-      const shapes: Shape[] = await getOldShapes(roomId);
-
-      state.shapes = shapes;
-      clearCanvas(state.shapes, canvas, ctx);
+      // 🔹 only warms up cache, does not return shapes anymore
+      await getOldShapes(roomId);
     } catch (err) {
-      console.error("Failed to fetch shapes from API:", err);
+      console.error("Failed to warm cache for room:", err);
     }
 
     setupWS();

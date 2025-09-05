@@ -1,4 +1,3 @@
-// ws-server/index.ts
 import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/servers-common/config";
@@ -7,18 +6,28 @@ import { redisClient, connectRedis } from "@repo/servers-common/redisClient";
 import cron from "node-cron";
 import { flushAllRooms } from "./utils/flushWoker";
 
-const wss = new WebSocketServer({ port: 3002 });
+const PORT = 3002;
+const MAX_EVENTS_PER_ROOM = 100;
+const EVENTS_TTL_SECONDS = 24 * 60 * 60;
 
-// 🔹 User session type
+const wss = new WebSocketServer({ port: PORT });
+
 type UserSession = {
   userId: string;
-  rooms: string[]; // store roomIds instead of slugs
+  rooms: string[];
   ws: WebSocket;
 };
 
 const users: UserSession[] = [];
 
-// --- JWT verification ---
+function roomCacheKey(roomId: string) {
+  return `room:${roomId}:cache`;
+}
+
+function roomEventsKey(roomId: string) {
+  return `room:${roomId}:events`;
+}
+
 function checkUser(token: string): string | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -29,109 +38,73 @@ function checkUser(token: string): string | null {
   }
 }
 
-// --- Local broadcast ---
 function broadcastLocal(roomId: string, payload: any) {
   const msg = JSON.stringify(payload);
   users.forEach((user) => {
     if (user.rooms.includes(roomId)) {
-      user.ws.send(msg);
+      try {
+        user.ws.send(msg);
+      } catch (err) {
+        console.error("WS send error:", err);
+      }
     }
   });
 }
 
-// --- Flush job ---
 cron.schedule("*/1 * * * *", async () => {
   console.log("⏳ Running flush job...");
   await flushAllRooms();
 });
 
-// --- Save events in Redis ---
 async function saveEvent(roomId: string, payload: any) {
   if (payload.origin === "history") return;
-  await redisClient.rPush(`room:${roomId}:events`, JSON.stringify(payload));
+
+  const cacheKey = roomCacheKey(roomId);
+  const eventsKey = roomEventsKey(roomId);
+
+  await redisClient.rPush(cacheKey, JSON.stringify(payload));
+  await redisClient.lTrim(cacheKey, -MAX_EVENTS_PER_ROOM, -1);
+  await redisClient.expire(cacheKey, EVENTS_TTL_SECONDS);
+
+  await redisClient.rPush(eventsKey, JSON.stringify(payload));
+  await redisClient.expire(eventsKey, EVENTS_TTL_SECONDS);
 }
 
-// --- Persist events in DB ---
-async function persistEvent(roomId: string, payload: any, userId: string) {
-  if (payload.origin === "history") return;
-
-  const room = await prismaClient.room.findUnique({
-    where: { id: roomId },
-    select: { id: true },
-  });
-
-  if (!room) {
-    console.error(`❌ No room found with id=${roomId}, event not saved`);
-    return;
-  }
-
-  await prismaClient.chatHistory.create({
-    data: {
-      message: JSON.stringify(payload),
-      userId,
-      roomId: room.id,
-    },
-  });
-}
-
-// --- Load past events ---
 async function loadRoomHistory(roomId: string) {
-  const redisKey = `room:${roomId}:cache`;
+  const key = roomCacheKey(roomId);
+  const cached = await redisClient.lRange(key, 0, -1);
 
-  const cached = await redisClient.lRange(redisKey, 0, -1);
-  if (cached.length > 0) {
-    return cached.map((c) => ({ ...JSON.parse(c), origin: "history" }));
-  }
-
-  const history = await prismaClient.chatHistory.findMany({
-    where: { roomId },
-    orderBy: { createdAt: "asc" },
-  });
-
-  const events = history.map((h) => {
+  return cached.map((c) => {
     try {
-      return { ...JSON.parse(h.message), origin: "history" };
+      return { ...JSON.parse(c), origin: "history" };
     } catch {
-      return {
-        type: "chat",
-        text: h.message,
-        userId: h.userId,
-        origin: "history",
-      };
+      return { type: "unknown", raw: c, roomId, origin: "history" };
     }
   });
-
-  if (events.length > 0) {
-    await redisClient.rPush(
-      redisKey,
-      events.map((e) => JSON.stringify(e))
-    );
-    await redisClient.expire(redisKey, 60 * 5);
-  }
-
-  return events;
 }
 
-// --- Setup Redis pub/sub ---
 async function setupRedisPubSub() {
   const sub = redisClient.duplicate();
   await sub.connect();
 
-  sub.pSubscribe("room:*", (message, channel) => {
-    const payload = JSON.parse(message);
-    const roomId = payload.roomId;
-    broadcastLocal(roomId, payload);
+  await sub.pSubscribe("room:*", (message, channel) => {
+    try {
+      const payload = JSON.parse(message);
+      const roomId = payload.roomId;
+      if (!roomId) return;
+      broadcastLocal(roomId, payload);
+    } catch (err) {
+      console.error("PubSub parse error:", err);
+    }
   });
 }
 
-// --- Init server ---
 (async () => {
   await connectRedis();
   await setupRedisPubSub();
-  console.log("✅ Redis connected, WebSocket server running on :3002");
+  console.log(`✅ Redis connected, WebSocket server running on :${PORT}`);
 })();
 
-// --- WebSocket handling ---
 wss.on("connection", async (ws, request) => {
   wss.on("error", console.error);
 
@@ -161,7 +134,6 @@ wss.on("connection", async (ws, request) => {
 
     const { type, roomId } = parsed;
 
-    // --- JOIN ROOM ---
     if (type === "join-room") {
       const room = await prismaClient.room.findUnique({
         where: { id: roomId },
@@ -177,30 +149,30 @@ wss.on("connection", async (ws, request) => {
         return;
       }
 
-      session.rooms.push(roomId);
+      if (!session.rooms.includes(roomId)) {
+        session.rooms.push(roomId);
+      }
 
       const events = await loadRoomHistory(roomId);
       ws.send(JSON.stringify({ type: "init-history", roomId, events }));
+      return;
     }
 
-    // --- LEAVE ROOM ---
     if (type === "leave-room") {
-      console.log(`User ${userId} left room ${roomId}`);
       session.rooms = session.rooms.filter((r) => r !== roomId);
+      return;
     }
 
-    // --- HANDLE USER EVENTS ---
     const eventTypes = ["chat", "draw", "erase", "move", "update", "resize"];
     if (eventTypes.includes(type)) {
       const payload = { ...parsed, roomId, userId };
       await saveEvent(roomId, payload);
-      await persistEvent(roomId, payload, userId);
       await redisClient.publish(`room:${roomId}`, JSON.stringify(payload));
+      return;
     }
   });
 
   ws.on("close", () => {
-    console.log(`User ${userId} disconnected, cleaning up`);
     const idx = users.indexOf(session);
     if (idx !== -1) users.splice(idx, 1);
   });

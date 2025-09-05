@@ -3,13 +3,24 @@ import type { Shape } from "../types";
 import { state } from "../state";
 import { clearCanvas } from "../clearCanvas";
 
-// 🔹 Merge updates instead of replacing to preserve existing properties
+// 🔹 Merge updates instead of replacing entire object
 function upsertShape(shapes: Shape[], updated: Shape) {
   const idx = shapes.findIndex((s) => s.id === updated.id);
   if (idx !== -1) {
     shapes[idx] = { ...shapes[idx], ...updated };
   } else {
     shapes.push(updated);
+  }
+}
+
+// 🔹 Safe parse helper
+function safeParse(e: any): any | null {
+  try {
+    if (typeof e === "string") return JSON.parse(e);
+    if (e?.message) return JSON.parse(e.message);
+    return e;
+  } catch {
+    return null;
   }
 }
 
@@ -37,38 +48,26 @@ export function setupWS() {
     };
 
     switch (message.type) {
-      case "init-history":
-        state.shapes = [];
-        message.events.forEach((e: any) => {
-          let parsed: any;
-          try {
-            parsed =
-              typeof e === "string"
-                ? JSON.parse(e)
-                : e.message
-                ? JSON.parse(e.message)
-                : e;
+      case "init-history": {
+        const events = message.events || [];
+        if (events.length > 0) {
+          state.shapes = []; // reset only if we actually got history
+          events.forEach((e: any) => {
+            const parsed = safeParse(e);
+            if (!parsed) return;
 
             if (["draw", "move", "update", "resize"].includes(parsed.type)) {
               handleShapeUpdate(parsed.shape);
-            }
-
-            if (parsed.type === "erase") {
+            } else if (parsed.type === "erase") {
               state.shapes = state.shapes.filter(
                 (s) => !parsed.ids.includes(s.id)
               );
               clearCanvas(state.shapes, state.canvas!, state.ctx!);
             }
-          } catch (err) {
-            console.error("Failed to parse history event:", e, err);
-          }
-        });
+          });
+        }
         break;
-
-      case "init-shapes":
-        state.shapes = message.shapes as Shape[];
-        clearCanvas(state.shapes, state.canvas!, state.ctx!);
-        break;
+      }
 
       case "draw":
       case "move":
@@ -81,6 +80,9 @@ export function setupWS() {
         state.shapes = state.shapes.filter((s) => !message.ids.includes(s.id));
         clearCanvas(state.shapes, state.canvas!, state.ctx!);
         break;
+
+      default:
+        console.warn("Unknown WS message type:", message.type);
     }
   };
 }
