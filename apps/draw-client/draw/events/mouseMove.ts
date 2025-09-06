@@ -12,7 +12,7 @@ export function onMouseMove(e: MouseEvent) {
   const rawX = e.clientX - rect.left;
   const rawY = e.clientY - rect.top;
 
-  // Pan camera
+  // --- Panning ---
   if (state.camera.isPanning) {
     state.camera.offsetX = state.camera.lastOffsetX + (rawX - state.camera.panStartX);
     state.camera.offsetY = state.camera.lastOffsetY + (rawY - state.camera.panStartY);
@@ -22,7 +22,7 @@ export function onMouseMove(e: MouseEvent) {
 
   const { x, y } = screenToWorld(rawX, rawY);
 
-  // Resize mode
+  // --- Resizing ---
   if (state.resizing && state.selectedShape) {
     const s = state.selectedShape;
     switch (s.type) {
@@ -55,23 +55,43 @@ export function onMouseMove(e: MouseEvent) {
     return;
   }
 
+  // --- Drag move ---
   if (state.activeTool === "select" && state.clicked && state.selectedShape) {
     dragSelectedTo(x, y);
     return;
   }
 
+  // --- If not drawing, stop here ---
   if (!state.clicked || !state.activeTool) return;
 
+  // --- Drawing mode ---
   clearCanvas(state.shapes, state.canvas, state.ctx);
 
+  // Pencil path
   if (state.activeTool === "pencil") {
     state.currentPath.push({ x, y });
   }
 
+  // Eraser
   if (state.activeTool === "eraser") {
     handleEraserMove(x, y);
     return;
   }
 
-  previewTool(state.ctx, state.activeTool, state.startX, state.startY, x, y, state.currentPath);
+  // 🔹 Draw preview with camera transform
+  state.ctx.save();
+  state.ctx.translate(state.camera.offsetX, state.camera.offsetY);
+  state.ctx.scale(state.camera.scale, state.camera.scale);
+
+  previewTool(
+    state.ctx,
+    state.activeTool,
+    state.startX,
+    state.startY,
+    x,
+    y,
+    state.currentPath
+  );
+
+  state.ctx.restore();
 }

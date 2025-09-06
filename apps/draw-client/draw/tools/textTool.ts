@@ -42,10 +42,14 @@ export function handleTextDblClick(
     localStorage.setItem("guest-canvas", JSON.stringify(existingShapes));
   };
 
-  const sendUpdate = (shape: Shape) => {
+  const sendShape = (shape: Shape, isNew: boolean) => {
     if (socket && roomId) {
       socket.send(
-        JSON.stringify({ type: "chat", message: JSON.stringify(shape), roomId })
+        JSON.stringify({
+          type: isNew ? "draw" : "update",
+          shape,
+          roomId,
+        })
       );
     } else {
       // Guest mode → overwrite unified storage
@@ -65,7 +69,7 @@ export function handleTextDblClick(
       targetShape.text = input.value.trim();
       safeRemoveInput(input);
 
-      sendUpdate(targetShape);
+      sendShape(targetShape, false);
       clearCanvas(existingShapes, canvas, ctx);
       cleanup();
     };
@@ -92,12 +96,18 @@ export function handleTextDblClick(
     if (finalized) return;
     finalized = true;
 
-    const shape: Shape = { id: uid(), type: "text", x, y, text: input.value.trim() };
+    const shape: Shape = {
+      id: uid(),
+      type: "text",
+      x,
+      y,
+      text: input.value.trim(),
+    };
     safeRemoveInput(input);
 
     if (shape.text) {
       existingShapes.push(shape);
-      sendUpdate(shape);
+      sendShape(shape, true);
       clearCanvas(existingShapes, canvas, ctx);
     }
     cleanup();
@@ -115,7 +125,6 @@ export function handleTextDblClick(
   input.addEventListener("blur", handleBlur);
   input.addEventListener("keydown", handleKey);
 }
-
 
 // --- helper to create overlay input ---
 function createInput(

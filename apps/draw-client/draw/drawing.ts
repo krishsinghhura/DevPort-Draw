@@ -1,4 +1,5 @@
 // draw/drawing.ts
+import { state } from "./state";
 import type { Shape, Tool, Point } from "./types";
 import { previewRect, finalizeRect } from "./tools/rect";
 import { previewCircle, finalizeCircle } from "./tools/circle";
@@ -13,13 +14,20 @@ export function previewTool(
   x: number, y: number,
   currentPath: Point[],
 ) {
+  ctx.save();
+  ctx.strokeStyle = state.selectedColor || "white";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]); // dashed preview outline
+
   switch (tool) {
-    case "rect":   return previewRect(ctx, startX, startY, x, y);
-    case "circle": return previewCircle(ctx, startX, startY, x, y);
-    case "line":   return previewLine(ctx, startX, startY, x, y);
-    case "arrow":  return previewArrow(ctx, startX, startY, x, y);
-    case "pencil": return previewPencil(ctx, currentPath);
+    case "rect":   previewRect(ctx, startX, startY, x, y); break;
+    case "circle": previewCircle(ctx, startX, startY, x, y); break;
+    case "line":   previewLine(ctx, startX, startY, x, y); break;
+    case "arrow":  previewArrow(ctx, startX, startY, x, y); break;
+    case "pencil": previewPencil(ctx, currentPath); break;
   }
+
+  ctx.restore();
 }
 
 export function finalizeTool(
@@ -29,18 +37,27 @@ export function finalizeTool(
   currentPath: Point[],
   makeId: () => string,
 ): Shape | null {
+  let shape: Shape | null = null;
+
   switch (tool) {
     case "rect": {
-      const s = { ...finalizeRect(startX, startY, x, y,makeId())};
+      const s = finalizeRect(startX, startY, x, y, makeId());
       if ("width" in s && "height" in s) {
         if (s.width === 0 || s.height === 0) return null;
       }
-      return s;
+      shape = s;
+      break;
     }
-    case "circle": return { ...finalizeCircle(startX, startY, x, y,makeId()) };
-    case "line":   return { ...finalizeLine(startX, startY, x, y,makeId()) };
-    case "arrow":  return { ...finalizeArrow(startX, startY, x, y,makeId()) };
-    case "pencil": return { ...finalizePencil(currentPath,makeId()) };
+    case "circle": shape = finalizeCircle(startX, startY, x, y, makeId()); break;
+    case "line":   shape = finalizeLine(startX, startY, x, y, makeId()); break;
+    case "arrow":  shape = finalizeArrow(startX, startY, x, y, makeId()); break;
+    case "pencil": shape = finalizePencil(currentPath, makeId()); break;
   }
-  return null;
+
+  if (shape) {
+    // attach selected color to shape
+    (shape as any).color = state.selectedColor;
+  }
+
+  return shape;
 }

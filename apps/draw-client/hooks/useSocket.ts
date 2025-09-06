@@ -7,7 +7,8 @@ export function useSocket(roomId?:string){
     const [socket,setSocket]=useState<WebSocket>()
 
     useEffect(()=>{
-        const ws=new WebSocket("ws://localhost:3002?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmMDIxYzhjOC04OTQ5LTRkNjktOTRjOC02MzViMjY0ZTFlNDgiLCJpYXQiOjE3NTcwMjA3MTN9.XbbWDzyzCUsMOyAh6ZxYmfjAtXWe4u7JJq7SPSusJhw");
+        const token=localStorage.getItem("token");
+        const ws=new WebSocket(`ws://localhost:3002?token=${token}`);
 
         ws.onopen=()=>{
             console.log("Opening a connection");

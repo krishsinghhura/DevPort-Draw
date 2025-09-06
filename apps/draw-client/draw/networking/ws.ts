@@ -1,4 +1,3 @@
-// draw/networking/setupWS.ts
 import type { Shape } from "../types";
 import { state } from "../state";
 import { clearCanvas } from "../clearCanvas";
@@ -47,11 +46,26 @@ export function setupWS() {
       clearCanvas(state.shapes, state.canvas!, state.ctx!);
     };
 
+    const handleChat = (msg: any) => {
+      const parsed = safeParse(msg.message);
+      if (!parsed) return;
+
+      // Save chat log (now only plain messages, not shapes)
+      state.chats.push({
+        userId: msg.userId,
+        roomId: msg.roomId,
+        message: parsed,
+      });
+
+      console.log("💬 Chat:", parsed);
+    };
+
     switch (message.type) {
       case "init-history": {
         const events = message.events || [];
         if (events.length > 0) {
           state.shapes = []; // reset only if we actually got history
+          state.chats = []; // reset chats too
           events.forEach((e: any) => {
             const parsed = safeParse(e);
             if (!parsed) return;
@@ -63,6 +77,8 @@ export function setupWS() {
                 (s) => !parsed.ids.includes(s.id)
               );
               clearCanvas(state.shapes, state.canvas!, state.ctx!);
+            } else if (parsed.type === "chat") {
+              handleChat(parsed);
             }
           });
         }
@@ -79,6 +95,10 @@ export function setupWS() {
       case "erase":
         state.shapes = state.shapes.filter((s) => !message.ids.includes(s.id));
         clearCanvas(state.shapes, state.canvas!, state.ctx!);
+        break;
+
+      case "chat":
+        handleChat(message);
         break;
 
       default:
@@ -120,5 +140,13 @@ export function wsResize(shape: Shape) {
   if (!state.isServerMode) return;
   state.socket!.send(
     JSON.stringify({ type: "resize", shape, roomId: state.roomId })
+  );
+}
+
+// 🔹 Still available for plain chat messages
+export function wsChat(message: any) {
+  if (!state.isServerMode) return;
+  state.socket!.send(
+    JSON.stringify({ type: "chat", message, roomId: state.roomId })
   );
 }
