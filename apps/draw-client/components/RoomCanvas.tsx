@@ -7,6 +7,7 @@ import DevPortDrawLoader from "../components/ui/loader";
 import MembersPanel from "./MembersPanel";
 import { useState } from "react";
 import ShareRoom from "../components/ShareRoom";
+import GeminiPrompt from "./GeminiPrompt";
 
 export function Roomcanvas({ roomId }: { roomId: string }) {
   const { socket, loading } = useSocket(roomId);
@@ -22,14 +23,23 @@ export function Roomcanvas({ roomId }: { roomId: string }) {
 
   return (
     <div className="relative w-full h-screen">
-      <Toolbar onSelect={setTool} activeTool={tool} />
+  {/* Toolbar + Gemini button container */}
+  <div className="fixed top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-50">
+    <Toolbar onSelect={setTool} activeTool={tool} />
+    <GeminiPrompt roomId={roomId} />
+  </div>
 
-      {/* key forces a clean remount if roomId changes, preventing listener leaks */}
-      <Canvas key={roomId} roomId={roomId} socket={socket} tool={tool} />
-      <MembersPanel roomId={roomId} isAdmin={true} />
-      <div className="fixed top-4 right-4 z-50">
-        <ShareRoom roomId={roomId} isAdmin={true} />
-      </div>
-    </div>
+  {/* Canvas */}
+  <Canvas key={roomId} roomId={roomId} socket={socket} tool={tool} />
+
+  {/* Members Panel */}
+  <MembersPanel roomId={roomId} isAdmin={true} />
+
+  {/* Share Room button (top-right) */}
+  <div className="fixed top-4 right-4 z-50">
+    <ShareRoom roomId={roomId} isAdmin={true} />
+  </div>
+</div>
+
   );
 }

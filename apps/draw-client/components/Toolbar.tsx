@@ -25,11 +25,10 @@ export default function Toolbar({ onSelect, activeTool }: ToolbarProps) {
     { type: "line", icon: <Minus size={18} />, label: "Line" },
     { type: "pencil", icon: <Pencil size={18} />, label: "Pencil" },
     { type: "eraser", icon: <Eraser size={18} />, label: "Eraser" },
-    // "text" can also be added here if you want a button for it
   ];
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 flex bg-white/90 backdrop-blur-md shadow-md rounded-2xl px-3 py-2 gap-2 z-50">
+    <div className="flex bg-white/90 backdrop-blur-md shadow-md rounded-2xl px-3 py-2 gap-2 z-50">
       {tools.map(({ type, icon, label }) => (
         <button
           key={type}

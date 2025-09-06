@@ -6,6 +6,7 @@ import { SignupSchema, SigninSchema, CreateRoom } from "@repo/common/zodTypes";
 import { prismaClient } from "@repo/db/client";
 import bcrypt from "bcrypt-ts";
 import { redisClient, connectRedis } from "@repo/servers-common/redisClient";
+import { GoogleGenAI } from "@google/genai";
 import cors from "cors";
 
 const app = express();
@@ -16,7 +17,10 @@ app.use(
     credentials: true,
   })
 );
-
+const ai = new GoogleGenAI({
+  vertexai: false,
+  apiKey: process.env.GEMENI_API_KEY,
+});
 prismaClient.$connect();
 connectRedis();
 
@@ -293,9 +297,6 @@ app.get("/dashboard", middleware, async (req, res) => {
   }
 });
 
-/**
- * Delete Room OR Leave Room
- */
 app.delete("/room/:roomId", middleware, async (req, res) => {
   const { roomId } = req.params;
   const userId = req.userId;
@@ -325,7 +326,9 @@ app.delete("/room/:roomId", middleware, async (req, res) => {
       // 👤 Non-admin → leave room
       const isMember = room.members.some((m) => m.id === userId);
       if (!isMember) {
-        return res.status(400).json({ message: "User is not a member of this room" });
+        return res
+          .status(400)
+          .json({ message: "User is not a member of this room" });
       }
 
       await prismaClient.room.update({
@@ -341,6 +344,112 @@ app.delete("/room/:roomId", middleware, async (req, res) => {
   }
 });
 
+const SYSTEM_PROMPT = `
+You are an AI that generates diagrams for a collaborative whiteboard app.
+Output must STRICTLY follow this schema:
+
+{
+  "type": "init-history",
+  "roomId": "<roomId>",
+  "events": [
+    {
+      "type": "draw",
+      "shape": {
+        "id": "<unique-id>",
+        "type": "rect" | "circle" | "line" | "arrow" | "text",
+        ...shape-specific-fields,
+        "color": "white"
+      },
+      "userId": "AI"
+    },
+    { "type": "move", "shape": { ... } }
+  ]
+}
+
+Shape-specific rules:
+- rect: {id, type:"rect", x, y, width, height, color}
+- circle: {id, type:"circle", centerX, centerY, radius, color}
+- line: {id, type:"line", x1, y1, x2, y2, color}
+- arrow: {id, type:"arrow", x1, y1, x2, y2, color}
+- text: {id, type:"text", x, y, text, color}
+
+Constraints:
+- Coordinates (x,y) should be spaced logically (e.g., server left, client right).
+- radius/width/height must be realistic (no zero or negative).
+- Add a short natural language "description" field summarizing the diagram.
+
+Rules:
+- Do not include markdown or text outside JSON.
+- Every shape must have x,y,width,height,radius etc. positioned to fit canvas.
+- Add a description in a \"description\" field at the top.
+- Output ONLY JSON.
+`;
+
+app.post("/generate-diagram", middleware, async (req, res) => {
+  const { prompt, roomId } = req.body;
+  const userId = req.userId; // ✅ from middleware
+
+  if (!prompt || !roomId || !userId) {
+    return res.status(400).json({ error: "prompt, roomId and userId are required" });
+  }
+
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `${SYSTEM_PROMPT}\n\nUser request: ${prompt}\nRoomId: ${roomId}`,
+            },
+          ],
+        },
+      ],
+      config: {
+        responseMimeType: "application/json", // force JSON
+      },
+    });
+
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+    if (!text) {
+      return res.status(500).json({ error: "AI did not return any JSON" });
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return res.status(500).json({ error: "Invalid JSON returned from AI", raw: text });
+    }
+
+    // ✅ Update all events' userId with actual userId
+    if (parsed?.events && Array.isArray(parsed.events)) {
+      parsed.events = parsed.events.map((event: any) => ({
+        ...event,
+        userId, // overwrite AI with real user
+      }));
+    }
+
+    // ✅ Push events into Redis
+    const redisKeyEvents = `room:${roomId}:events`;
+    const redisKeyCache = `room:${roomId}:cache`;
+
+    const serializedEvents = parsed.events.map((e: any) => JSON.stringify(e));
+
+    if (serializedEvents.length > 0) {
+      await redisClient.rPush(redisKeyEvents, serializedEvents);
+      await redisClient.rPush(redisKeyCache, serializedEvents);
+      await redisClient.expire(redisKeyCache, 24 * 60 * 60); // keep cache fresh
+    }
+
+    return res.json(parsed);
+  } catch (error: any) {
+    console.error("AI generation failed:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
 
 app.listen(3001, () => {
   console.log("✅ HTTP server running on :3001");

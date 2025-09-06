@@ -12,6 +12,7 @@
     "@repo/typescript-config": "*"
   },
   "dependencies": {
+    "@google/genai": "^1.17.0",
     "@repo/common": "*",
     "@repo/db": "*",
     "@repo/servers-common": "*",
