@@ -32,7 +32,6 @@ export default function ShareRoom({ roomId, isAdmin }: ShareRoomProps) {
         throw new Error(data.message || "Failed to make room public");
       }
 
-      // 👇 your frontend route for joining
       const publicLink = `${window.location.origin}/join/${roomId}`;
       setLink(publicLink);
       setOpen(true);

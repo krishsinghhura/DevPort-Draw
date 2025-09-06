@@ -1,4 +1,3 @@
-// draw/eraser.ts
 import { state } from "./state";
 import { previewEraser, finalizeEraser } from "./tools/eraser";
 import { clearCanvas } from "./clearCanvas";
@@ -13,7 +12,6 @@ export function handleEraserMove(x: number, y: number) {
   const updated = finalizeEraser(state.shapes, x, y);
 
   if (updated.length !== before) {
-    // compute erased ids
     const erasedIds = state.shapes
       .filter((s) => !updated.includes(s))
       .map((s) => s.id);

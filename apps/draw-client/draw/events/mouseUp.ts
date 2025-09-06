@@ -12,7 +12,6 @@ export function onMouseUp(e: MouseEvent) {
     return;
   }
 
-  // 🔹 Resizing finished → broadcast update
   if (state.resizing) {
     state.resizing = false;
     state.activeHandle = null;
@@ -33,7 +32,6 @@ export function onMouseUp(e: MouseEvent) {
   const rawY = e.clientY - rect.top;
   const { x, y } = screenToWorld(rawX, rawY);
 
-  // 🔹 Move shape
   if (state.activeTool === "select" && state.selectedShape) {
     if (!state.isServerMode) saveGuest(state.shapes);
     else wsMove(state.selectedShape);
@@ -41,7 +39,6 @@ export function onMouseUp(e: MouseEvent) {
     return;
   }
 
-  // 🔹 Draw new shape
   const shape = finalizeTool(
     state.activeTool,
     state.startX,

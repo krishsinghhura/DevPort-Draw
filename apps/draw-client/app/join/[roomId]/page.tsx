@@ -26,7 +26,6 @@ export default function JoinPage({ params }: { params: { roomId: string } }) {
           return;
         }
 
-        // ✅ After joining, redirect to the actual room page
         router.push(`/canvas/${roomId}`);
       } catch (err) {
         console.error("Error joining room:", err);

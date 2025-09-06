@@ -1,4 +1,3 @@
-// draw/events/mouseMove.ts
 import { state, screenToWorld } from "../state";
 import { dragSelectedTo } from "../selection";
 import { clearCanvas } from "../clearCanvas";
@@ -78,7 +77,6 @@ export function onMouseMove(e: MouseEvent) {
     return;
   }
 
-  // 🔹 Draw preview with camera transform
   state.ctx.save();
   state.ctx.translate(state.camera.offsetX, state.camera.offsetY);
   state.ctx.scale(state.camera.scale, state.camera.scale);

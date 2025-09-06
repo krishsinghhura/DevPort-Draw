@@ -1,9 +1,7 @@
-// draw/clearCanvas.ts
 import { Shape } from "./types";
 import { drawArrow } from "./utils";
 import { state } from "./state";
 
-// Draws an infinite-looking grid
 function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number) {
   const step = 50;
   ctx.strokeStyle = "#333";
@@ -29,7 +27,6 @@ function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number) 
   }
 }
 
-// draw resize handles around a shape
 function drawHandles(ctx: CanvasRenderingContext2D, shape: Shape) {
   const handles: { x: number; y: number }[] = [];
 
@@ -112,12 +109,12 @@ export function clearCanvas(
         console.log("📝 Drawing text shape:", shape);
         ctx.fillStyle = "white";
         ctx.font = "20px Arial";
-        ctx.textBaseline = "top"; // ensure y aligns to top-left
+        ctx.textBaseline = "top"; 
         ctx.fillText(shape.text, shape.x, shape.y);
         break;
     }
 
-    // draw resize handles if selected
+    
     if (state.selectedShape && state.selectedShape.id === shape.id) {
       drawHandles(ctx, shape);
     }

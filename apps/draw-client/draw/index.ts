@@ -1,4 +1,3 @@
-// draw/index.ts
 import { clearCanvas } from "./clearCanvas";
 import { state, setEnv } from "./state";
 import { loadGuest } from "./storage";
@@ -29,7 +28,7 @@ export async function initDraw(
 
   if (state.isServerMode && roomId) {
     try {
-      // 🔹 only warms up cache, does not return shapes anymore
+      
       await getOldShapes(roomId);
     } catch (err) {
       console.error("Failed to warm cache for room:", err);

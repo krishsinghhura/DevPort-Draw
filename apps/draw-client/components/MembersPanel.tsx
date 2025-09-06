@@ -10,7 +10,7 @@ type Member = {
 
 interface MembersPanelProps {
   roomId: string;
-  isAdmin: boolean; // 👈 pass this from your app
+  isAdmin: boolean; 
 }
 
 export default function MembersPanel({ roomId, isAdmin }: MembersPanelProps) {
@@ -33,7 +33,7 @@ export default function MembersPanel({ roomId, isAdmin }: MembersPanelProps) {
       });
       const data: Member[] = await res.json();
 
-      // 🔹 Drop the first element (admin)
+      
       setMembers(data.slice(1));
     } catch (err) {
       console.error("Failed to fetch members", err);

@@ -1,11 +1,10 @@
-// draw/state.ts
 import type { Shape, Tool, Point } from "./types";
 
 export type ChatMessage = {
-  id?: string; // optional if server generates it
+  id?: string; 
   userId: string;
   roomId: string;
-  message: any; // could be string or parsed object (e.g. text shape)
+  message: any;
 };
 
 export const state = {
@@ -45,9 +44,9 @@ export const state = {
   isServerMode: false,
 
   // 🔹 style
-  selectedColor: "white", // default stroke color
+  selectedColor: "white", 
 
-  // camera (for infinite canvas)
+  
   camera: {
     scale: 1,
     offsetX: 0,
@@ -74,11 +73,9 @@ export function setEnv(opts: {
   state.socket = opts.socket ?? null;
   state.isServerMode = !!(opts.socket && opts.roomId);
 
-  // reset chats whenever we switch environment
   state.chats = [];
 }
 
-// helper: screen -> world coords
 export function screenToWorld(x: number, y: number) {
   return {
     x: (x - state.camera.offsetX) / state.camera.scale,

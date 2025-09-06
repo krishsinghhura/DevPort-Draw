@@ -2,7 +2,7 @@ import type { Shape } from "../types";
 import { state } from "../state";
 import { clearCanvas } from "../clearCanvas";
 
-// 🔹 Merge updates instead of replacing entire object
+
 function upsertShape(shapes: Shape[], updated: Shape) {
   const idx = shapes.findIndex((s) => s.id === updated.id);
   if (idx !== -1) {
@@ -12,7 +12,7 @@ function upsertShape(shapes: Shape[], updated: Shape) {
   }
 }
 
-// 🔹 Safe parse helper
+
 function safeParse(e: any): any | null {
   try {
     if (typeof e === "string") return JSON.parse(e);
@@ -50,7 +50,7 @@ export function setupWS() {
       const parsed = safeParse(msg.message);
       if (!parsed) return;
 
-      // Save chat log (now only plain messages, not shapes)
+
       state.chats.push({
         userId: msg.userId,
         roomId: msg.roomId,
@@ -64,8 +64,8 @@ export function setupWS() {
       case "init-history": {
         const events = message.events || [];
         if (events.length > 0) {
-          state.shapes = []; // reset only if we actually got history
-          state.chats = []; // reset chats too
+          state.shapes = [];
+          state.chats = []; 
           events.forEach((e: any) => {
             const parsed = safeParse(e);
             if (!parsed) return;
@@ -107,7 +107,7 @@ export function setupWS() {
   };
 }
 
-// 🔹 Event senders
+
 export function wsDraw(shape: Shape) {
   if (!state.isServerMode) return;
   state.socket!.send(
@@ -142,8 +142,6 @@ export function wsResize(shape: Shape) {
     JSON.stringify({ type: "resize", shape, roomId: state.roomId })
   );
 }
-
-// 🔹 Still available for plain chat messages
 export function wsChat(message: any) {
   if (!state.isServerMode) return;
   state.socket!.send(

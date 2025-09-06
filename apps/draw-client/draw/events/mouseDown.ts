@@ -1,17 +1,17 @@
-// draw/events/mouseDown.ts
+
 import { state, screenToWorld } from "../state";
 import { selectAt } from "../selection";
 
-// --- Define handle types for shapes ---
+
 type RectHandle = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type CircleHandle = "left" | "right" | "top" | "bottom";
 type LineHandle = "start" | "end";
 
 type Handle = RectHandle | CircleHandle | LineHandle;
 
-// Hit-test to see if user clicked on a resize handle
+
 function hitHandle(shape: any, x: number, y: number): Handle | null {
-  const size = 6; // hitbox size in px
+  const size = 6; 
 
   if (shape.type === "rect") {
     const handles: Record<RectHandle, { x: number; y: number }> = {
@@ -50,7 +50,7 @@ export function onMouseDown(e: MouseEvent) {
   const rawX = e.clientX - rect.left;
   const rawY = e.clientY - rect.top;
 
-  // --- Panning (middle mouse or modifier key) ---
+  
   if (e.button === 1 || e.button === 2 || e.shiftKey || e.metaKey || e.ctrlKey) {
     state.camera.isPanning = true;
     state.camera.panStartX = rawX;
@@ -60,13 +60,13 @@ export function onMouseDown(e: MouseEvent) {
     return;
   }
 
-  // --- Convert to world coords ---
+  
   const { x, y } = screenToWorld(rawX, rawY);
   state.startX = x;
   state.startY = y;
   state.activeTool = state.getTool();
 
-  // --- Selection / Resizing ---
+  
   if (state.activeTool === "select") {
     if (state.selectedShape) {
       const handle = hitHandle(state.selectedShape, x, y);
@@ -81,7 +81,7 @@ export function onMouseDown(e: MouseEvent) {
     return;
   }
 
-  // --- Drawing ---
+  
   state.clicked = true;
   if (state.activeTool === "pencil") {
     state.currentPath = [{ x, y }];

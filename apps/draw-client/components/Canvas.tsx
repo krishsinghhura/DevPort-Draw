@@ -14,7 +14,7 @@ export default function Canvas({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // keep the latest tool without re-running initDraw
+  
   const toolRef = useRef<Tool>(tool);
   useEffect(() => {
     toolRef.current = tool;
@@ -24,18 +24,16 @@ export default function Canvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // size once on mount
+    
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // IMPORTANT: init once per room/socket; it will pull tool via the getter
+    
     const getTool = () => toolRef.current;
     initDraw(canvas, getTool, roomId, socket);
 
-    // no cleanup because initDraw owns event listeners for this canvas instance
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, socket]); // don't depend on `tool` — we read it from toolRef
+    
+  }, [roomId, socket]);
 
   return (
     <canvas

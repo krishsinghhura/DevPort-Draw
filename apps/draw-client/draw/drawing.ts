@@ -1,4 +1,3 @@
-// draw/drawing.ts
 import { state } from "./state";
 import type { Shape, Tool, Point } from "./types";
 import { previewRect, finalizeRect } from "./tools/rect";
@@ -17,7 +16,7 @@ export function previewTool(
   ctx.save();
   ctx.strokeStyle = state.selectedColor || "white";
   ctx.lineWidth = 2;
-  ctx.setLineDash([5, 5]); // dashed preview outline
+  ctx.setLineDash([5, 5]); 
 
   switch (tool) {
     case "rect":   previewRect(ctx, startX, startY, x, y); break;
@@ -55,7 +54,6 @@ export function finalizeTool(
   }
 
   if (shape) {
-    // attach selected color to shape
     (shape as any).color = state.selectedColor;
   }
 

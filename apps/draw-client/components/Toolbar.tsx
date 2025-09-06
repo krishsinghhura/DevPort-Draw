@@ -9,7 +9,7 @@ import {
   ArrowRight,
   Minus,
 } from "lucide-react";
-import type { Tool } from "@/draw/types"; // central type
+import type { Tool } from "@/draw/types"; 
 
 interface ToolbarProps {
   onSelect: (tool: Tool) => void;
