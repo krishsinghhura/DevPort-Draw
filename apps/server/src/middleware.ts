@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/servers-common/config";
 
+export interface AuthRequest extends Request {
+  userId?: string;
+}
+
 export function middleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers["authorization"];  
 

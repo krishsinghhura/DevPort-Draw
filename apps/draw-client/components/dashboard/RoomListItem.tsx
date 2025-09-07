@@ -94,7 +94,7 @@ export default function RoomListItem({ room, onDelete }: RoomListItemProps) {
             {/* Actions */}
             <div className="flex items-center space-x-2 ml-4">
               <button
-                onClick={() => router.push(`/room/${room.id}`)}
+                onClick={() => router.push(`/canvas/${room.id}`)}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />

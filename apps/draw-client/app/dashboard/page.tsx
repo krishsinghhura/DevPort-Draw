@@ -73,7 +73,7 @@ export default function DashboardPage() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Failed to create room');
 
-    router.push(`/room/${data.roomId}`);
+    router.push(`/canvas/${data.roomId}`);
   };
 
   const handleDeleteRoom = async (roomId: string) => {
