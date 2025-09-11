@@ -18,7 +18,7 @@ export async function getDashboard(req:Request, res:Response){
       },
     });
 
-    const dashboardData = rooms.map((room) => ({
+    const dashboardData = rooms.map((room:any) => ({
       id: room.id,
       slug: room.slug,
       adminId: room.adminId,
