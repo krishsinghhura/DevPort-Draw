@@ -1,5 +1,6 @@
 import { prismaClient } from "../config/prisma";
 import { Request, Response } from "express";
+import type { Room, User } from "@prisma/client"; 
 
 export async function getDashboard(req:Request, res:Response){
   const userId = req.userId;
@@ -18,7 +19,7 @@ export async function getDashboard(req:Request, res:Response){
       },
     });
 
-    const dashboardData = rooms.map((room) => ({
+    const dashboardData = rooms.map((room:any) => ({
       id: room.id,
       slug: room.slug,
       adminId: room.adminId,

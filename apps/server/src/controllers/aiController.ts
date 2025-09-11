@@ -5,7 +5,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   vertexai: false,
-  apiKey: process.env.GEMENI_API_KEY,
+  apiKey: "AIzaSyCzeU__Ojn6MZLd7ke0aAhH2R34VmI95f4",
 });
 
 connectRedis();

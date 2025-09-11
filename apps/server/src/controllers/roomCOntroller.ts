@@ -43,7 +43,7 @@ export const roomController = {
 
       if (!room) return res.status(404).json({ error: "No Room found" });
 
-      const isMember = room.members.some((m) => m.id === userId);
+      const isMember = room.members.some((m:any) => m.id === userId);
       if (!isMember) return res.status(403).json({ error: "Not a room member" });
     } catch (error: any) {
       return res.status(500).json(error);
@@ -71,7 +71,7 @@ export const roomController = {
       });
 
       if (events.length > 0) {
-        await redisClient.rPush(cacheKey, events.map((e) => JSON.stringify(e)));
+        await redisClient.rPush(cacheKey, events.map((e:any) => JSON.stringify(e)));
         await redisClient.expire(cacheKey, 24 * 60 * 60);
         console.log(`[DB→Cache] Warmed up cache for roomId:${roomId}`);
       }
@@ -116,7 +116,7 @@ export const roomController = {
       return res.status(403).json({ message: "Room is private or link expired" });
     }
 
-    const alreadyMember = room.members.some((m) => m.id === userId);
+    const alreadyMember = room.members.some((m:any) => m.id === userId);
     if (!alreadyMember) {
       await prismaClient.room.update({
         where: { id: roomId },
@@ -177,7 +177,7 @@ export const roomController = {
 
         return res.json({ message: "Room deleted successfully" });
       } else {
-        const isMember = room.members.some((m) => m.id === userId);
+        const isMember = room.members.some((m:any) => m.id === userId);
         if (!isMember) {
           return res.status(400).json({ message: "User is not a member of this room" });
         }

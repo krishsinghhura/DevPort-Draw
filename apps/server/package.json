@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "bulid": "tsc -b",
+    "build": "tsc -b",
     "start": "node dist/index.js",
     "dev": "tsc -b && node dist/index.js"
   },
