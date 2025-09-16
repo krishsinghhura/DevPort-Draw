@@ -5,7 +5,7 @@ export async function setupRedisPubSub() {
   const sub = redisClient.duplicate();
   await sub.connect();
 
-  await sub.pSubscribe("room:*", (message) => {
+  await sub.pSubscribe("room:*", (message:any) => {
     try {
       const payload = JSON.parse(message);
       const roomId = payload.roomId;

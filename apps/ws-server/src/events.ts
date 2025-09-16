@@ -31,7 +31,7 @@ export async function handleMessage(
 
     if (!room) return;
 
-    const isMember = room.members.some((m) => m.id === session.userId);
+    const isMember = room.members.some((m:any) => m.id === session.userId);
     if (!isMember) {
       ws.send(JSON.stringify({ type: "error", message: "Not a room member" }));
       return;

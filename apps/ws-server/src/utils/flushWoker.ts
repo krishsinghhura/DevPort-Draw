@@ -35,7 +35,7 @@ export async function flushRoomEvents(roomId: string) {
   if (rawEvents.length === 0) return;
 
   const valid = rawEvents
-    .map((e) => safeParse<EventPayload>(e))
+    .map((e:any) => safeParse<EventPayload>(e))
     .filter((e): e is EventPayload => !!e && e.origin !== "history");
 
   if (valid.length === 0) {
@@ -44,13 +44,13 @@ export async function flushRoomEvents(roomId: string) {
   }
 
   try {
-    const eventsWithId = valid.map((e) => ({
+    const eventsWithId = valid.map((e:any) => ({
       ...e,
       id: e.id || uuidv4(),
     }));
 
     await prismaClient.chatHistory.createMany({
-      data: eventsWithId.map((e) => ({
+      data: eventsWithId.map((e:any) => ({
         message: JSON.stringify(e),
         userId: e.userId,
         roomId: e.roomId,

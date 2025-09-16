@@ -34,7 +34,7 @@ export async function loadRoomHistory(roomId: string) {
   const key = roomCacheKey(roomId);
   const cached = await redisClient.lRange(key, 0, -1);
 
-  return cached.map((c) => {
+  return cached.map((c:any) => {
     try {
       return { ...JSON.parse(c), origin: "history" };
     } catch {
