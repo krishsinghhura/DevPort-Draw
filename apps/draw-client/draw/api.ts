@@ -1,9 +1,8 @@
 import { Shape } from "./types";
 import { HTTP_BACKEND } from "@/config";
 
-export async function getOldShapes(roomId: string): Promise<Shape[]> {
-  const token = localStorage.getItem("token");
-
+export async function getOldShapes(roomId: string,token:string): Promise<Shape[]> {
+  
   await fetch(`${HTTP_BACKEND}/room/${roomId}`, {
     method: "GET",
     headers: {

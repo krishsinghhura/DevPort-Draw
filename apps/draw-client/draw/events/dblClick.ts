@@ -1,4 +1,4 @@
-// draw/events/dblClick.ts
+"use client"
 import { state } from "../state";
 import { handleTextDblClick } from "../tools/textTool";
 import { pushState } from "../history";

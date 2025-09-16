@@ -1,3 +1,4 @@
+"use client"
 import { state, screenToWorld } from "../state";
 import { finalizeTool } from "../drawing";
 import { pushState } from "../history";

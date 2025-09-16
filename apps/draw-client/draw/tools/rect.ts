@@ -1,3 +1,4 @@
+"use client"
 import { Shape } from "../types";
 
 // tools/rect.ts

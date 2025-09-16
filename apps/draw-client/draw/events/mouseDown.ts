@@ -1,4 +1,4 @@
-
+"use client"
 import { state, screenToWorld } from "../state";
 import { selectAt } from "../selection";
 

@@ -1,3 +1,4 @@
+"use client"
 import { Shape, Tool } from "../types";
 import { clearCanvas } from "../clearCanvas";
 import { getShapeAtPosition } from "../textUtils";

@@ -1,4 +1,4 @@
-// draw/events/bind.ts
+"use client"
 import { onMouseDown } from "./mouseDown";
 import { onMouseMove } from "./mouseMove";
 import { onMouseUp } from "./mouseUp";

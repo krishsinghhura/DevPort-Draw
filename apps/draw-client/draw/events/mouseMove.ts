@@ -1,3 +1,4 @@
+"use client"
 import { state, screenToWorld } from "../state";
 import { dragSelectedTo } from "../selection";
 import { clearCanvas } from "../clearCanvas";

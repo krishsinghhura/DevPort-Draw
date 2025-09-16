@@ -1,3 +1,4 @@
+"use client"
 import type { Shape } from "../types";
 import { state } from "../state";
 import { clearCanvas } from "../clearCanvas";

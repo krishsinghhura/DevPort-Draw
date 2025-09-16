@@ -1,3 +1,4 @@
+"use client"
 import { state } from "../state";
 import { undo, redo, pushState } from "../history";
 import { saveGuest } from "../storage";

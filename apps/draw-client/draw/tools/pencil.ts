@@ -1,3 +1,4 @@
+"use client"
 import { Shape, Point } from "../types";
 
 export function previewPencil(ctx: CanvasRenderingContext2D, path: Point[]) {

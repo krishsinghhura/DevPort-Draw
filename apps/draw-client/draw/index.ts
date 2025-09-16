@@ -1,3 +1,4 @@
+"use client"
 import { clearCanvas } from "./clearCanvas";
 import { state, setEnv } from "./state";
 import { loadGuest } from "./storage";
@@ -6,7 +7,7 @@ import { bindAll } from "./events/bind";
 import { getOldShapes } from "./api";
 import type { Tool } from "./types";
 
-export async function initDraw(
+export function initDraw(
   canvas: HTMLCanvasElement,
   getTool: () => Tool,
   roomId?: string | null,
@@ -28,8 +29,11 @@ export async function initDraw(
 
   if (state.isServerMode && roomId) {
     try {
-      
-      await getOldShapes(roomId);
+      const token=localStorage.getItem("token");
+      if(!token){
+        return
+      }
+      getOldShapes(roomId,token);
     } catch (err) {
       console.error("Failed to warm cache for room:", err);
     }

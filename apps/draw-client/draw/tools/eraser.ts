@@ -1,3 +1,4 @@
+"use client"
 import { Shape } from "../types";
 import { isShapeNearPoint } from "../utils";
 
