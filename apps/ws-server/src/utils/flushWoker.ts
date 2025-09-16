@@ -36,7 +36,7 @@ export async function flushRoomEvents(roomId: string) {
 
   const valid = rawEvents
     .map((e:any) => safeParse<EventPayload>(e))
-    .filter((e): e is EventPayload => !!e && e.origin !== "history");
+    .filter((e:any): e is EventPayload => !!e && e.origin !== "history");
 
   if (valid.length === 0) {
     await redisClient.del(key);
