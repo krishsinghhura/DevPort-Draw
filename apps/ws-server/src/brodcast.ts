@@ -1,4 +1,4 @@
-import { RoomEvent, UserSession as UserSessionType } from "./types"; // import type from types
+import { RoomEvent, UserSession as UserSessionType } from "./types";
 
 const users: UserSessionType[] = [];
 

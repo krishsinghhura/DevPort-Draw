@@ -1,6 +1,6 @@
 "use client"
-import { log } from "console";
 import { useState,useEffect } from "react"
+import { WS_BACKEND } from "@/config";
 
 export function useSocket(roomId?:string){
     const [loading,setLoading]=useState(true);
@@ -8,7 +8,7 @@ export function useSocket(roomId?:string){
 
     useEffect(()=>{
         const token=localStorage.getItem("token");
-        const ws=new WebSocket(`ws://localhost:3002?token=${token}`);
+        const ws=new WebSocket(`${WS_BACKEND}?token=${token}`);
 
         ws.onopen=()=>{
             console.log("Opening a connection");

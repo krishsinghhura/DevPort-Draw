@@ -2,10 +2,11 @@ import { Request, Response } from "express";
 import { SYSTEM_PROMPT } from "../utils/systemPromot";
 import { redisClient, connectRedis } from "@repo/servers-common/redisClient";
 import { GoogleGenAI } from "@google/genai";
+import {GEMENI_API_KEY} from "../config"
 
 const ai = new GoogleGenAI({
   vertexai: false,
-  apiKey: "AIzaSyCzeU__Ojn6MZLd7ke0aAhH2R34VmI95f4",
+  apiKey: GEMENI_API_KEY,
 });
 
 connectRedis();

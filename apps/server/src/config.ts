@@ -1,0 +1,1 @@
+export const GEMENI_API_KEY="AIzaSyCzeU__Ojn6MZLd7ke0aAhH2R34VmI95f4";
