@@ -9,7 +9,7 @@ import { useState } from "react";
 import ShareRoom from "../components/ShareRoom";
 import GeminiPrompt from "./GeminiPrompt";
 
-export function Roomcanvas({ roomId }: { roomId: string }) {
+export default function Roomcanvas({ roomId }: { roomId: string }) {
   const { socket, loading } = useSocket(roomId);
   const [tool, setTool] = useState<Tool>("select"); 
 

@@ -1,3 +1,4 @@
+"use client"
 import { state } from "./state";
 import { previewEraser, finalizeEraser } from "./tools/eraser";
 import { clearCanvas } from "./clearCanvas";

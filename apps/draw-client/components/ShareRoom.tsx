@@ -15,7 +15,7 @@ export default function ShareRoom({ roomId, isAdmin }: ShareRoomProps) {
   const makePublic = async () => {
     if (!isAdmin) return;
     setLoading(true);
-
+    if (typeof window === 'undefined') return;
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${HTTP_BACKEND}/room/${roomId}/public`, {

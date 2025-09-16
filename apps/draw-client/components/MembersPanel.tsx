@@ -21,6 +21,7 @@ export default function MembersPanel({ roomId, isAdmin }: MembersPanelProps) {
 
   const fetchMembers = async () => {
     setLoading(true);
+    if (typeof window === 'undefined') return;
     const Token = localStorage.getItem("token");
     setToken(Token ?? "");
     try {

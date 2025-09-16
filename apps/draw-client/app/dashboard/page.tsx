@@ -35,6 +35,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchDashboard = async () => {
+      if (typeof window === 'undefined') return;
       try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${HTTP_BACKEND}/dashboard`, {
@@ -55,6 +56,7 @@ export default function DashboardPage() {
   }, []);
 
   const handleLogout = () => {
+    if (typeof window === 'undefined') return;
     localStorage.removeItem('token');
     router.push('/signin');
   };

@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 import { clearCanvas } from "./clearCanvas";
 import { state, setEnv } from "./state";
 import { loadGuest } from "./storage";
@@ -28,12 +29,16 @@ export function initDraw(
   setEnv({ canvas, ctx, getTool, roomId, socket });
 
   if (state.isServerMode && roomId) {
+    if (typeof window === "undefined") return;
+
     try {
-      const token=localStorage.getItem("token");
-      if(!token){
-        return
-      }
-      getOldShapes(roomId,token);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      getOldShapes(roomId, token).then((shapes) => {
+        state.shapes = shapes;
+        clearCanvas(state.shapes, canvas, ctx);
+      });
     } catch (err) {
       console.error("Failed to warm cache for room:", err);
     }

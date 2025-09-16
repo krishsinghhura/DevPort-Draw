@@ -1,3 +1,4 @@
+"use client"
 import { state } from "./state";
 import type { Shape, Tool, Point } from "./types";
 import { previewRect, finalizeRect } from "./tools/rect";

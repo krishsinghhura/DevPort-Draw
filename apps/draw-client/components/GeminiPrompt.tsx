@@ -23,7 +23,7 @@ export default function GeminiPrompt({ roomId }: { roomId: string }) {
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
     setLoading(true);
-
+    if (typeof window === 'undefined') return;
     const token = localStorage.getItem("token");
 
     try {

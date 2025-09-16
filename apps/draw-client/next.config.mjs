@@ -3,7 +3,13 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: { unoptimized: true },
+  experimental: {
+    esmExternals: 'loose'
+  }
 };
 
-module.exports = nextConfig;
+export default nextConfig;

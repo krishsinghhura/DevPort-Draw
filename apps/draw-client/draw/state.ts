@@ -1,3 +1,4 @@
+"use client"
 import type { Shape, Tool, Point } from "./types";
 
 export type ChatMessage = {

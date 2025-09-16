@@ -1,3 +1,4 @@
+"use client"
 export type TextShape = {
   id: string;
   type: "text";

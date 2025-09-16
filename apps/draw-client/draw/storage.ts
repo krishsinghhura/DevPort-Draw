@@ -1,4 +1,4 @@
-// draw/storage.ts
+"use client"
 import type { Shape } from "./types";
 
 export function loadGuest(): Shape[] {

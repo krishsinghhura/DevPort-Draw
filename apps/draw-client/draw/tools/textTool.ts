@@ -40,6 +40,7 @@ export function handleTextDblClick(
   const targetShape = getShapeAtPosition(existingShapes, x, y);
 
   const saveGuest = () => {
+    if (typeof window === 'undefined') return;
     localStorage.setItem("guest-canvas", JSON.stringify(existingShapes));
   };
 

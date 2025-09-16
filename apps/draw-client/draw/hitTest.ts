@@ -1,3 +1,4 @@
+"use client"
 import { Shape } from "./types";
 
 export function hitTest(shape: Shape, x: number, y: number): boolean {

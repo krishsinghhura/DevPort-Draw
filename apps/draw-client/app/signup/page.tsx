@@ -24,7 +24,7 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const router = useRouter();
-
+  if (typeof window === 'undefined') return;
   useEffect(()=>{
       const token=localStorage.getItem("token");
       if(token){

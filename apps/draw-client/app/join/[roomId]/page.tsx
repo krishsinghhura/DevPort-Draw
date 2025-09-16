@@ -1,14 +1,16 @@
 "use client";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { HTTP_BACKEND } from "@/config";
 
-export default function JoinPage({ params }: { params: { roomId: string } }) {
+export default function JoinPage() {
   const router = useRouter();
-  const { roomId } = params;
+  const params = useParams();
+  const roomId = params.roomId as string;
 
   useEffect(() => {
     const joinRoom = async () => {
+      if (typeof window === 'undefined') return;
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(`${HTTP_BACKEND}/room/${roomId}/join`, {

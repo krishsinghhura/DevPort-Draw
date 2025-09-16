@@ -7,6 +7,7 @@ export function useSocket(roomId?:string){
     const [socket,setSocket]=useState<WebSocket>()
 
     useEffect(()=>{
+        if (typeof window === "undefined") return; 
         const token=localStorage.getItem("token");
         const ws=new WebSocket(`${WS_BACKEND}?token=${token}`);
 

@@ -1,4 +1,4 @@
-// draw/history.ts
+"use client"
 import { state } from "./state";
 import { clearCanvas } from "./clearCanvas";
 import { saveGuest } from "./storage";

@@ -1,3 +1,4 @@
+"use client"
 import { state } from "./state";
 import { hitTest } from "./hitTest";
 import type { Shape } from "./types";
