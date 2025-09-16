@@ -1,11 +1,10 @@
 import { createClient } from "redis";
-import {REDIS_HOST,REDIS_PASSWORD} from "./index";
 
 export const redisClient = createClient({
   username: "default",
-  password: REDIS_PASSWORD,
+  password: "crLm9qZLLF8ZWyMjuPwhBmrneaFlQQcV",
   socket: {
-    host: REDIS_HOST,
+    host: "redis-11477.c8.us-east-1-2.ec2.redns.redis-cloud.com",
     port: 11477,
   },
 });
