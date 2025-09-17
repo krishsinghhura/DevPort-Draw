@@ -1,13 +1,12 @@
 {
   "name": "@repo/db",
   "version": "1.0.0",
-  "main": "./dist/index.js",
+  "main": "index.js",
   "exports": {
-    "./client": "./dist/index.js"
+    "./client": "./src/index.js"
   },
   "scripts": {
-    "build": "tsc -b",
-    "dev": "tsc -b --watch"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",
