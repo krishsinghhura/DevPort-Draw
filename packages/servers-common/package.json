@@ -1,16 +1,18 @@
 {
   "name": "@repo/servers-common",
   "version": "1.0.0",
-  "main": "index.js",
-  "exports":{
-    "./config":"./src/index.ts",
-    "./redisClient":"./src/redisClient.ts"
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    "./config": "./dist/index.js",
+    "./redisClient": "./dist/redisClient.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -b",
+    "dev": "tsc -b --watch"
   },
   "devDependencies": {
-    "@repo/typescript-config":"*"
+    "@repo/typescript-config": "*"
   },
   "keywords": [],
   "author": "",

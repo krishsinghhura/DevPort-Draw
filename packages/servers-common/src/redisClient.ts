@@ -9,7 +9,7 @@ export const redisClient = createClient({
   },
 });
 
-redisClient.on("error", (err:any) => {
+redisClient.on("error", (err) => {
   console.error("Redis Client Error", err);
 });
 

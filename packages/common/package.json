@@ -1,12 +1,14 @@
 {
   "name": "@repo/common",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "exports":{
-    "./zodTypes":"./src/zodTypes.ts"
+    "./zodTypes":"./dist/zodTypes.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build":"tsc -b",
+    "dev":"tsc -b --watch"
   },
   "devDependencies": {
     "@repo/typescript-config":"*"
