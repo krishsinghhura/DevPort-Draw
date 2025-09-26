@@ -1,6 +1,6 @@
 import { SignupSchema, SigninSchema } from "@repo/common/zodTypes";
 import { prismaClient } from "../config/prisma";
-import bcrypt from "bcrypt-ts";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/servers-common/config";
 import { Request, Response } from "express";
